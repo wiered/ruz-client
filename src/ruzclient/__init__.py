@@ -1,4 +1,7 @@
-from .client import ClientConfig, RuzClient
+from .client import (
+    ClientConfig,
+    RuzClient,
+)
 from .errors import RuzAuthError, RuzClientError, RuzHttpError
 
 __all__ = [

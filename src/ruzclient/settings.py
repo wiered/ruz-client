@@ -1,0 +1,15 @@
+import os
+from dotenv import load_dotenv
+
+load_dotenv()
+
+class Settings:
+    base_url: str = os.getenv("BASE_URL")
+    timeout_s: float = 30.0
+    token: str = os.getenv("TOKEN")
+    default_headers: dict[str, str] = {
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+
+settings = Settings()

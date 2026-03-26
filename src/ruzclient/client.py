@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional
 
+from .auth import API_KEY_HEADER_NAME, get_api_key
 from .errors import RuzAuthError, RuzClientError, RuzHttpError
 
 
@@ -10,6 +11,10 @@ from .errors import RuzAuthError, RuzClientError, RuzHttpError
 class ClientConfig:
     base_url: str
     timeout_s: float = 30.0
+    # API Key для `X-API-Key` (требуется ruz-server по документации).
+    api_key: Optional[str] = None
+    # Оставлено для обратной совместимости: если `api_key` не задан,
+    # используем `bearer_token` как источник для `X-API-Key`.
     bearer_token: Optional[str] = None
     default_headers: Optional[Mapping[str, str]] = None
 
@@ -63,15 +68,33 @@ class RuzClient:
             return base_url
         return f"{base_url}/{path_norm}"
 
-    def _build_headers(self, headers: Optional[Mapping[str, str]]) -> dict[str, str]:
+    def _build_headers(
+        self,
+        headers: Optional[Mapping[str, str]],
+        *,
+        api_key: Optional[str] = None,
+    ) -> dict[str, str]:
         merged: dict[str, str] = {}
         if self._config.default_headers:
             merged.update(dict(self._config.default_headers))
         if headers:
             merged.update(dict(headers))
 
-        if self._config.bearer_token:
-            # Не перетираем явный Authorization, если пользователь его передал.
+        # Всегда передаём `X-API-Key` с каждым запросом (если токен доступен).
+        effective_api_key = api_key
+        if effective_api_key is None:
+            effective_api_key = (
+                self._config.api_key
+                if self._config.api_key is not None
+                else (self._config.bearer_token if self._config.bearer_token is not None else None)
+            )
+        if effective_api_key is None:
+            effective_api_key = get_api_key()
+
+        if effective_api_key:
+            merged.setdefault(API_KEY_HEADER_NAME, effective_api_key)
+        elif self._config.bearer_token and "Authorization" not in merged:
+            # Фоллбэк для старой схемы (если вдруг используются старые эндпоинты).
             merged.setdefault("Authorization", f"Bearer {self._config.bearer_token}")
 
         return merged
@@ -85,6 +108,7 @@ class RuzClient:
         json: Optional[Any] = None,
         data: Optional[Any] = None,
         headers: Optional[Mapping[str, str]] = None,
+        api_key: Optional[str] = None,
         timeout_s: Optional[float] = None,
     ) -> Any:
         """
@@ -96,7 +120,7 @@ class RuzClient:
         - None для 204 No Content
         """
         url_or_path = self._normalize_path(path)
-        merged_headers = self._build_headers(headers)
+        merged_headers = self._build_headers(headers, api_key=api_key)
 
         timeout_value = timeout_s if timeout_s is not None else self._config.timeout_s
 
@@ -161,6 +185,7 @@ class RuzClient:
         *,
         params: Optional[Mapping[str, Any]] = None,
         headers: Optional[Mapping[str, str]] = None,
+        api_key: Optional[str] = None,
         timeout_s: Optional[float] = None,
     ) -> Any:
         return await self.request(
@@ -168,6 +193,7 @@ class RuzClient:
             path,
             params=params,
             headers=headers,
+            api_key=api_key,
             timeout_s=timeout_s,
         )
 
@@ -179,6 +205,7 @@ class RuzClient:
         json: Optional[Any] = None,
         data: Optional[Any] = None,
         headers: Optional[Mapping[str, str]] = None,
+        api_key: Optional[str] = None,
         timeout_s: Optional[float] = None,
     ) -> Any:
         return await self.request(
@@ -188,6 +215,7 @@ class RuzClient:
             json=json,
             data=data,
             headers=headers,
+            api_key=api_key,
             timeout_s=timeout_s,
         )
 
@@ -199,6 +227,7 @@ class RuzClient:
         json: Optional[Any] = None,
         data: Optional[Any] = None,
         headers: Optional[Mapping[str, str]] = None,
+        api_key: Optional[str] = None,
         timeout_s: Optional[float] = None,
     ) -> Any:
         return await self.request(
@@ -208,6 +237,7 @@ class RuzClient:
             json=json,
             data=data,
             headers=headers,
+            api_key=api_key,
             timeout_s=timeout_s,
         )
 
@@ -217,6 +247,7 @@ class RuzClient:
         *,
         params: Optional[Mapping[str, Any]] = None,
         headers: Optional[Mapping[str, str]] = None,
+        api_key: Optional[str] = None,
         timeout_s: Optional[float] = None,
     ) -> Any:
         return await self.request(
@@ -224,6 +255,36 @@ class RuzClient:
             path,
             params=params,
             headers=headers,
+            api_key=api_key,
             timeout_s=timeout_s,
         )
+
+    async def public(self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None) -> Any:
+        """
+        GET `/public`.
+
+        Эндпоинт публичный, но заголовок `X-API-Key` не мешает (если токен доступен).
+        """
+
+        return await self.get("/public", api_key=api_key, timeout_s=timeout_s)
+
+    async def protected(
+        self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None
+    ) -> Any:
+        """
+        GET `/protected`.
+
+        Требует `X-API-Key` (авторизация на стороне сервера).
+        """
+
+        return await self.get("/protected", api_key=api_key, timeout_s=timeout_s)
+
+    async def healthz(self, *, timeout_s: Optional[float] = None) -> Any:
+        """
+        GET `/healthz`.
+
+        Эндпоинт состояния сервера.
+        """
+
+        return await self.get("/healthz", timeout_s=timeout_s)
 
