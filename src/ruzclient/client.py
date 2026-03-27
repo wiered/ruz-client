@@ -7,6 +7,31 @@ from .auth import API_KEY_HEADER_NAME, get_api_key
 from .errors import RuzAuthError, RuzClientError, RuzHttpError
 
 
+def _normalize_base_url(base_url: str, *, default_scheme: str = "http", default_port: int = 2201) -> str:
+    """
+    Приводит `base_url` к виду `http[s]://host[:port][/path]`.
+
+    Нужна устойчивость к BASE_URL из env, который иногда задан как `127.0.0.1`.
+    """
+
+    cleaned = base_url.strip().rstrip("/")
+    if cleaned.startswith("http://") or cleaned.startswith("https://"):
+        return cleaned
+
+    # Отделяем "хост/порт" от возможного пути (/api).
+    if "/" in cleaned:
+        host_part, rest = cleaned.split("/", 1)
+        rest = "/" + rest if rest else ""
+    else:
+        host_part, rest = cleaned, ""
+
+    # Если порт не указан, добавляем default_port.
+    if ":" not in host_part:
+        host_part = f"{host_part}:{default_port}"
+
+    return f"{default_scheme}://{host_part}{rest}"
+
+
 @dataclass(frozen=True)
 class ClientConfig:
     base_url: str
@@ -30,7 +55,20 @@ class RuzClient:
     """
 
     def __init__(self, config: ClientConfig, *, client: Optional[Any] = None) -> None:
-        self._config = config
+        # Нормализуем `base_url`, чтобы работали значения вида:
+        # - `127.0.0.1`
+        # - `127.0.0.1:8080`
+        # - `http://127.0.0.1:8080/api`
+        #
+        # В `ruz-server/.env` порт по умолчанию 8080, поэтому используем его,
+        # когда порт не задан.
+        self._config = ClientConfig(
+            base_url=_normalize_base_url(config.base_url),
+            timeout_s=config.timeout_s,
+            api_key=config.api_key,
+            bearer_token=config.bearer_token,
+            default_headers=config.default_headers,
+        )
 
         self._own_client = client is None
         if client is not None:
@@ -63,6 +101,28 @@ class RuzClient:
         if path.startswith("http://") or path.startswith("https://"):
             return path
         base_url = self._config.base_url.rstrip("/")
+        path_norm = path.lstrip("/")
+        if not path_norm:
+            return base_url
+        return f"{base_url}/{path_norm}"
+
+    def _normalize_root_path(self, path: str) -> str:
+        """
+        Нормализует путь относительно "корня" сервера.
+
+        В ваших доках встречается `BASE_URL` вида `http://host:8000/api`,
+        но эндпоинты `/public`, `/protected`, `/healthz` объявлены в `app.py`
+        без префикса `/api`. Поэтому, если base_url заканчивается на `/api`,
+        отрежем его для этих методов.
+        """
+
+        if path.startswith("http://") or path.startswith("https://"):
+            return path
+
+        base_url = self._config.base_url.rstrip("/")
+        if base_url.endswith("/api"):
+            base_url = base_url[: -len("/api")]
+
         path_norm = path.lstrip("/")
         if not path_norm:
             return base_url
@@ -266,7 +326,12 @@ class RuzClient:
         Эндпоинт публичный, но заголовок `X-API-Key` не мешает (если токен доступен).
         """
 
-        return await self.get("/public", api_key=api_key, timeout_s=timeout_s)
+        return await self.request(
+            "GET",
+            self._normalize_root_path("/public"),
+            api_key=api_key,
+            timeout_s=timeout_s,
+        )
 
     async def protected(
         self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None
@@ -277,7 +342,12 @@ class RuzClient:
         Требует `X-API-Key` (авторизация на стороне сервера).
         """
 
-        return await self.get("/protected", api_key=api_key, timeout_s=timeout_s)
+        return await self.request(
+            "GET",
+            self._normalize_root_path("/protected"),
+            api_key=api_key,
+            timeout_s=timeout_s,
+        )
 
     async def healthz(self, *, timeout_s: Optional[float] = None) -> Any:
         """
@@ -286,5 +356,9 @@ class RuzClient:
         Эндпоинт состояния сервера.
         """
 
-        return await self.get("/healthz", timeout_s=timeout_s)
+        return await self.request(
+            "GET",
+            self._normalize_root_path("/healthz"),
+            timeout_s=timeout_s,
+        )
 
