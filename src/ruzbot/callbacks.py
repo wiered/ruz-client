@@ -125,8 +125,8 @@ async def buttonsCallback(callback, bot: AsyncTeleBot):
             await commands.setSubGroupCommand(bot, callback.message, user_id=uid)
 
         case ["searchTeacher"]:
-            await search_handlers.search_teacher_list_command(bot, callback.message, 0, user_id=uid)
-            # await commands.search_menu_stub_command(bot, callback.message, user_id=uid)
+            # await search_handlers.search_teacher_list_command(bot, callback.message, 0, user_id=uid)
+            await commands.search_menu_stub_command(bot, callback.message, user_id=uid)
 
         case ["teacherPage", page_s]:
             try:
@@ -166,8 +166,8 @@ async def buttonsCallback(callback, bot: AsyncTeleBot):
             await search_handlers.lecturer_week_command(bot, callback.message, lid, wd, lp, user_id=uid)
 
         case ["searchSubject"]:
-            await search_handlers.search_subject_list_command(bot, callback.message, 0, user_id=uid)
-            # await commands.search_menu_stub_command(bot, callback.message, user_id=uid)
+            # await search_handlers.search_subject_list_command(bot, callback.message, 0, user_id=uid)
+            await commands.search_menu_stub_command(bot, callback.message, user_id=uid)
 
         case ["subjectPage", page_s]:
             try:
