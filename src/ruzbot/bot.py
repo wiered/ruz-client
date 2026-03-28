@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from cmath import polar
 from typing import Union
 
 from telebot import types
@@ -16,7 +17,7 @@ from ruzclient.settings import settings
 __version__ = "28.03.26"
 
 # https://core.telegram.org/bots/api#sendmessage (такой же лимит у editMessageText)
-TELEGRAM_MAX_MESSAGE_CHARS = 4096
+TELEGRAM_MAX_MESSAGE_CHARS = 2048
 _MESSAGE_TOO_LONG_MARKER = "\n\nMESSAGE TOO LONG"
 
 
@@ -50,22 +51,26 @@ class RuzBot(AsyncTeleBot):
     ) -> types.Message:
         try:
             return await super().send_message(chat_id, text, **kwargs)
-        except ApiTelegramException as e:
-            if _is_message_too_long_error(e):
-                return await super().send_message(
-                    chat_id, _truncate_with_too_long_marker(text), **kwargs
-                )
-            raise
+        except Exception as e:
+            if str(type(e)) == "<class 'telebot.asyncio_helper.ApiTelegramException'>":
+                if _is_message_too_long_error(e):
+                    return await super().send_message(
+                        chat_id, _truncate_with_too_long_marker(text), **kwargs
+                    )
+            else:
+                raise(e)
 
     async def edit_message_text(self, text: str, **kwargs) -> Union[types.Message, bool]:
         try:
             return await super().edit_message_text(text, **kwargs)
-        except ApiTelegramException as e:
-            if _is_message_too_long_error(e):
-                return await super().edit_message_text(
-                    _truncate_with_too_long_marker(text), **kwargs
-                )
-            raise
+        except Exception as e:
+            if str(type(e)) == "<class 'telebot.asyncio_helper.ApiTelegramException'>":
+                if _is_message_too_long_error(e):
+                    return await super().edit_message_text(
+                        _truncate_with_too_long_marker(text), **kwargs
+                    )
+            else:
+                raise(e)
 
 
 bot = RuzBot(__version__)
