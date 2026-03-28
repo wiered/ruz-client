@@ -147,19 +147,37 @@ def _user_has_subgroup(u) -> bool:
     return u is not None and u.get("subgroup", 0) != 0
 
 
-async def dateCommand(bot, message, _timedelta: int, *, user_id: int):
+def _normalize_parse_day_delta(date_arg) -> int:
+    """
+    Смещение в днях от сегодня. Строка YYYY-MM-DD → дельта к сегодня (старые кнопки с датой).
+    Иначе — целое число как смещение (0/1 и навигация).
+    """
+    if date_arg is None:
+        return 0
+    s = str(date_arg).strip()
+    if len(s) == 10 and s[4] == "-" and s[7] == "-":
+        try:
+            d = datetime.strptime(s, "%Y-%m-%d").date()
+            today = datetime.today().date()
+            return (d - today).days
+        except ValueError:
+            logger.error(f"Invalid parseDay date '{s}', defaulting to 0")
+            return 0
+    try:
+        return int(s)
+    except ValueError:
+        logger.error(f"Invalid parseDay arg '{s}', defaulting to 0")
+        return 0
+
+
+async def dateCommand(bot, message, date_arg, *, user_id: int):
     """
     Расписание на день через ``GET .../schedule/user/{id}/day``.
     """
-    logger.info(f"dateCommand called: user={user_id}, delta_days={_timedelta!r}")
+    delta_days = _normalize_parse_day_delta(date_arg)
+    logger.info(f"dateCommand called: user={user_id}, date_arg={date_arg!r} -> delta_days={delta_days}")
 
     async with ruz_client() as client:
-        try:
-            delta_days = int(_timedelta)
-        except (TypeError, ValueError):
-            delta_days = 0
-            logger.error(f"Invalid _timedelta '{_timedelta}', defaulting to 0")
-
         target_date = datetime.today() + timedelta(days=delta_days)
         lessons = await client.schedule.get_user_day(user_id, target_date.date())
 
