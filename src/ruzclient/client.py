@@ -9,6 +9,7 @@ from .errors import RuzAuthError, RuzHttpError
 from .http import AiohttpTransport
 from .http.endpoints.groups import GroupsEndpoints
 from .http.endpoints.schedule import ScheduleEndpoints
+from .http.endpoints.search import SearchEndpoints
 from .http.endpoints.users import UsersEndpoints
 from .http.transport import AsyncHttpTransport, TransportResponse
 
@@ -102,6 +103,7 @@ class RuzClient:
 
         self._groups = GroupsEndpoints(self)
         self._schedule = ScheduleEndpoints(self)
+        self._search = SearchEndpoints(self)
         self._users = UsersEndpoints(self)
 
     @property
@@ -113,6 +115,11 @@ class RuzClient:
     def schedule(self) -> ScheduleEndpoints:
         """Эндпоинты расписания: ``get_user_day``, ``get_user_week``."""
         return self._schedule
+
+    @property
+    def search(self) -> SearchEndpoints:
+        """Поиск занятий по преподавателю и по дисциплине (день / неделя)."""
+        return self._search
 
     @property
     def users(self) -> UsersEndpoints:
