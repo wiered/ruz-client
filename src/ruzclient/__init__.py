@@ -7,8 +7,11 @@ from .http.endpoints import (
     GroupSearchHit,
     GroupsEndpoints,
     RuzGroupSearchItem,
+    ScheduleEndpoints,
     UserCreate,
     UserRead,
+    UserUpdate,
+    UserScheduleLesson,
     UsersEndpoints,
 )
 
@@ -21,7 +24,10 @@ __all__ = [
     "GroupSearchHit",
     "GroupsEndpoints",
     "RuzGroupSearchItem",
+    "ScheduleEndpoints",
     "UserCreate",
     "UserRead",
+    "UserUpdate",
+    "UserScheduleLesson",
     "UsersEndpoints",
 ]

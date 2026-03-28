@@ -8,6 +8,7 @@ from .auth import API_KEY_HEADER_NAME, get_api_key
 from .errors import RuzAuthError, RuzHttpError
 from .http import AiohttpTransport
 from .http.endpoints.groups import GroupsEndpoints
+from .http.endpoints.schedule import ScheduleEndpoints
 from .http.endpoints.users import UsersEndpoints
 from .http.transport import AsyncHttpTransport, TransportResponse
 
@@ -100,12 +101,18 @@ class RuzClient:
             self._own_transport = True
 
         self._groups = GroupsEndpoints(self)
+        self._schedule = ScheduleEndpoints(self)
         self._users = UsersEndpoints(self)
 
     @property
     def groups(self) -> GroupsEndpoints:
         """Эндпоинты групп, например ``await client.groups.search_groups_by_name("ИС22")``."""
         return self._groups
+
+    @property
+    def schedule(self) -> ScheduleEndpoints:
+        """Эндпоинты расписания: ``get_user_day``, ``get_user_week``."""
+        return self._schedule
 
     @property
     def users(self) -> UsersEndpoints:
@@ -311,7 +318,7 @@ class RuzClient:
 
     async def public(self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None) -> Any:
         """
-        GET `/api/public`.
+        GET `/public`.
 
         Эндпоинт публичный, но заголовок `X-API-Key` не мешает (если токен доступен).
         """
@@ -327,7 +334,7 @@ class RuzClient:
         self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None
     ) -> Any:
         """
-        GET `/api/protected`.
+        GET `/protected`.
 
         Требует `X-API-Key` (авторизация на стороне сервера).
         """
@@ -341,7 +348,7 @@ class RuzClient:
 
     async def healthz(self, *, timeout_s: Optional[float] = None) -> Any:
         """
-        GET `/api/healthz`.
+        GET `/healthz`.
 
         Эндпоинт состояния сервера.
         """

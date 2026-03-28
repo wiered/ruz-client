@@ -36,13 +36,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--api-key",
         default=None,
-        help="X-API-Key для эндпоинта /api/protected (если не передан — используется TOKEN из env).",
+        help="X-API-Key для эндпоинта /protected (если не передан — используется TOKEN из env).",
     )
 
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("healthz", help="GET /api/healthz")
-    sub.add_parser("public", help="GET /api/public")
-    sub.add_parser("protected", help="GET /api/protected (требует X-API-Key)")
+    sub.add_parser("healthz", help="GET /healthz")
+    sub.add_parser("public", help="GET /public")
+    sub.add_parser("protected", help="GET /protected (требует X-API-Key)")
     sub.add_parser("group", help="GET /api/group/search?q=... (поиск групп по имени)")
     sub.add_parser("user", help="GET /api/user/{user_id} (получение пользователя по id)")
 

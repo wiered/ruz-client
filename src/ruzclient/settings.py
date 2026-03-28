@@ -12,6 +12,7 @@ class Settings:
         "Content-Type": "application/json",
         "Accept": "application/json",
     }
+    bot_token: str = os.getenv("BOT_TOKEN")
 
 
 settings = Settings()

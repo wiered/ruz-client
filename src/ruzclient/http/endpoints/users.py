@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any, TypedDict
 if TYPE_CHECKING:
     from ...client import RuzClient
 
-__all__ = ["UserCreate", "UserRead", "UsersEndpoints"]
+__all__ = ["UserCreate", "UserRead", "UserUpdate", "UsersEndpoints"]
 
 
 class UserRead(TypedDict):
@@ -20,10 +20,22 @@ class UserRead(TypedDict):
     last_used_at: str
 
 
-def _payload_as_json_dict(payload: UserCreate) -> dict[str, Any]:
+def _payload_as_json_dict(payload: UserCreate | UserUpdate) -> dict[str, Any]:
     """Собирает JSON-тело; опциональные поля с ``None`` не передаются."""
     d = asdict(payload)
     return {k: v for k, v in d.items() if v is not None}
+
+
+@dataclass
+class UserUpdate:
+    """Тело ``PUT /api/user/{user_id}`` — частичное обновление пользователя."""
+
+    username: str | None = None
+    group_oid: int | None = None
+    subgroup: int | None = None
+    group_guid: str | None = None
+    group_name: str | None = None
+    faculty_name: str | None = None
 
 
 @dataclass
@@ -63,6 +75,24 @@ class UsersEndpoints:
         body = _payload_as_json_dict(payload)
         raw = await self._client.post(
             "api/user/",
+            json=body,
+            timeout_s=timeout_s,
+            api_key=api_key,
+        )
+        return raw  # type: ignore[return-value]
+
+    async def update_user(
+        self,
+        user_id: int,
+        payload: UserUpdate,
+        *,
+        timeout_s: float | None = None,
+        api_key: str | None = None,
+    ) -> UserRead:
+        """``PUT /api/user/{user_id}`` — обновить пользователя."""
+        body = _payload_as_json_dict(payload)
+        raw = await self._client.put(
+            f"api/user/{user_id}",
             json=body,
             timeout_s=timeout_s,
             api_key=api_key,
