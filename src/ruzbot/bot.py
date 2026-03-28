@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-from cmath import polar
-from typing import Union
+from typing import Optional, Union
 
 from telebot import types
-from telebot.apihelper import ApiTelegramException
 from telebot.async_telebot import AsyncTeleBot
+from telebot.asyncio_helper import ApiTelegramException
+from telebot.formatting import mlink
 from telebot.util import quick_markup
 
 from ruzbot import markups
@@ -16,8 +16,8 @@ from ruzclient.settings import settings
 
 __version__ = "28.03.26"
 
-# https://core.telegram.org/bots/api#sendmessage (такой же лимит у editMessageText)
-TELEGRAM_MAX_MESSAGE_CHARS = 2048
+# https://core.telegram.org/bots/api#sendmessage (тот же лимит у editMessageText)
+TELEGRAM_MAX_MESSAGE_CHARS = 4096
 _MESSAGE_TOO_LONG_MARKER = "\n\nMESSAGE TOO LONG"
 
 
@@ -38,6 +38,19 @@ def _is_message_too_long_error(exc: ApiTelegramException) -> bool:
     return "MESSAGE_TOO_LONG" in desc or "message is too long" in desc.lower()
 
 
+def _append_donation_footer(text: str, parse_mode: Optional[str]) -> str:
+    """
+    Для MarkdownV2 нельзя дописывать URL и скобки в «:)» без экранирования —
+    Telegram вернёт ошибку парсинга сущностей. Ссылка оформляется через mlink.
+    """
+    url = (settings.payment_url or "").strip()
+    if not url:
+        return text
+    if parse_mode == "MarkdownV2":
+        return text + "\n\n" + mlink("Админ собирает деньхи на кофе :)", url)
+    return text + f"\n\nАдмин собирает деньхи на кофе :)\n{url}"
+
+
 class RuzBot(AsyncTeleBot):
     def __init__(self, version: str):
         super().__init__(settings.bot_token)
@@ -49,28 +62,28 @@ class RuzBot(AsyncTeleBot):
         text: str,
         **kwargs,
     ) -> types.Message:
+        parse_mode = kwargs.get("parse_mode", self.parse_mode)
+        text = _append_donation_footer(text, parse_mode)
         try:
             return await super().send_message(chat_id, text, **kwargs)
-        except Exception as e:
-            if str(type(e)) == "<class 'telebot.asyncio_helper.ApiTelegramException'>":
-                if _is_message_too_long_error(e):
-                    return await super().send_message(
-                        chat_id, _truncate_with_too_long_marker(text), **kwargs
-                    )
-            else:
-                raise(e)
+        except ApiTelegramException as e:
+            if _is_message_too_long_error(e):
+                return await super().send_message(
+                    chat_id, _truncate_with_too_long_marker(text), **kwargs
+                )
+            raise
 
     async def edit_message_text(self, text: str, **kwargs) -> Union[types.Message, bool]:
+        parse_mode = kwargs.get("parse_mode", self.parse_mode)
+        text = _append_donation_footer(text, parse_mode)
         try:
             return await super().edit_message_text(text, **kwargs)
-        except Exception as e:
-            if str(type(e)) == "<class 'telebot.asyncio_helper.ApiTelegramException'>":
-                if _is_message_too_long_error(e):
-                    return await super().edit_message_text(
-                        _truncate_with_too_long_marker(text), **kwargs
-                    )
-            else:
-                raise(e)
+        except ApiTelegramException as e:
+            if _is_message_too_long_error(e):
+                return await super().edit_message_text(
+                    _truncate_with_too_long_marker(text), **kwargs
+                )
+            raise
 
 
 bot = RuzBot(__version__)

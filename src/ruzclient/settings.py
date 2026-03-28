@@ -13,6 +13,7 @@ class Settings:
         "Accept": "application/json",
     }
     bot_token: str = os.getenv("BOT_TOKEN")
+    payment_url: str = os.getenv("PAYMENT_URL")
 
 
 settings = Settings()
