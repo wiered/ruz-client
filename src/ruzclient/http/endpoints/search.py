@@ -8,7 +8,7 @@ if TYPE_CHECKING:
 
 from .schedule import UserScheduleLesson, _format_schedule_date
 
-__all__ = ["SearchEndpoints"]
+__all__ = ["SearchEndpoints", "search_group_filters"]
 
 
 def _optional_filters(
@@ -22,6 +22,15 @@ def _optional_filters(
     if sub_group is not None:
         out["sub_group"] = sub_group
     return out
+
+
+def search_group_filters(
+    *,
+    group_id: int | None = None,
+    sub_group: int | None = None,
+) -> dict[str, int]:
+    """Дополнительные query-параметры ``group_id`` / ``sub_group`` для ``GET .../api/search/...``."""
+    return _optional_filters(group_id=group_id, sub_group=sub_group)
 
 
 class SearchEndpoints:

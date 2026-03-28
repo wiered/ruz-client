@@ -20,6 +20,8 @@ class UserScheduleLesson(TypedDict):
     discipline_name: str
     kind_of_work: str
     lecturer_short_name: str
+    lecturer_id: int
+    discipline_id: int
     auditorium_name: str
     building: str
     group_id: int

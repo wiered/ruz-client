@@ -45,6 +45,8 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("protected", help="GET /protected (требует X-API-Key)")
     sub.add_parser("group", help="GET /api/group/search?q=... (поиск групп по имени)")
     sub.add_parser("user", help="GET /api/user/{user_id} (получение пользователя по id)")
+    sub.add_parser("lecturer_week", help="GET /api/search/lecturer/week?lecturer_id=...&date=... (поиск занятий преподавателя за неделю)")
+    sub.add_parser("discipline_week", help="GET /api/search/discipline/week?discipline_id=...&date=... (поиск занятий дисциплины за неделю)")
 
     return parser
 
@@ -72,6 +74,16 @@ async def run_command(*, base_url: str, timeout_s: float, api_key: Optional[str]
             resp = await client.groups.search_groups_by_name(q="ИС22")
         elif command == "user":
             resp = await client.users.get_by_id(547334624)
+        elif command == "lecturer_week":
+            resp = await client.search.lecturer_week(
+                lecturer_id=1077,
+                schedule_date="2026-03-28",
+            )
+        elif command == "discipline_week":
+            resp = await client.search.discipline_week(
+                discipline_id=3752,
+                schedule_date="2026-03-28",
+            )
         else:  # pragma: no cover
             raise ValueError(f"Unknown command: {command}")
 

@@ -4,7 +4,7 @@ import re
 from telebot.async_telebot import AsyncTeleBot
 from telebot.util import quick_markup
 
-from ruzbot import commands
+from ruzbot import commands, search_handlers
 from ruzbot.utils import getRandomGroup, ruz_client
 
 
@@ -123,6 +123,178 @@ async def buttonsCallback(callback, bot: AsyncTeleBot):
             )
             await commands.setGroup(bot, callback, group_oid, group_label)
             await commands.setSubGroupCommand(bot, callback.message, user_id=uid)
+
+        case ["searchTeacher"]:
+            await search_handlers.search_teacher_list_command(bot, callback.message, 0, user_id=uid)
+            # await commands.search_menu_stub_command(bot, callback.message, user_id=uid)
+
+        case ["teacherPage", page_s]:
+            try:
+                p = int(page_s)
+            except ValueError:
+                logger.error(f"Invalid teacherPage: {page_s!r}")
+                return
+            await search_handlers.search_teacher_list_command(bot, callback.message, p, user_id=uid)
+
+        case ["teacherCard", lid_s, page_s]:
+            try:
+                lid = int(lid_s)
+                lp = int(page_s)
+            except ValueError:
+                logger.error(f"Invalid teacherCard: {lid_s!r} {page_s!r}")
+                return
+            await search_handlers.teacher_card_command(bot, callback.message, lid, lp, user_id=uid)
+
+        case ["lecturerDay", lid_s, dd_s, lp_s]:
+            try:
+                lid = int(lid_s)
+                dd = int(dd_s)
+                lp = int(lp_s)
+            except ValueError:
+                logger.error(f"Invalid lecturerDay: {callback.data!r}")
+                return
+            await search_handlers.lecturer_day_command(bot, callback.message, lid, dd, lp, user_id=uid)
+
+        case ["lecturerWeek", lid_s, wd_s, lp_s]:
+            try:
+                lid = int(lid_s)
+                wd = int(wd_s)
+                lp = int(lp_s)
+            except ValueError:
+                logger.error(f"Invalid lecturerWeek: {callback.data!r}")
+                return
+            await search_handlers.lecturer_week_command(bot, callback.message, lid, wd, lp, user_id=uid)
+
+        case ["searchSubject"]:
+            await search_handlers.search_subject_list_command(bot, callback.message, 0, user_id=uid)
+            # await commands.search_menu_stub_command(bot, callback.message, user_id=uid)
+
+        case ["subjectPage", page_s]:
+            try:
+                p = int(page_s)
+            except ValueError:
+                logger.error(f"Invalid subjectPage: {page_s!r}")
+                return
+            await search_handlers.search_subject_list_command(bot, callback.message, p, user_id=uid)
+
+        case ["subjectCard", did_s, page_s]:
+            try:
+                did = int(did_s)
+                lp = int(page_s)
+            except ValueError:
+                logger.error(f"Invalid subjectCard: {did_s!r} {page_s!r}")
+                return
+            await search_handlers.subject_card_command(bot, callback.message, did, lp, user_id=uid)
+
+        case ["disciplineDay", did_s, dd_s, lp_s]:
+            try:
+                did = int(did_s)
+                dd = int(dd_s)
+                lp = int(lp_s)
+            except ValueError:
+                logger.error(f"Invalid disciplineDay: {callback.data!r}")
+                return
+            await search_handlers.discipline_day_command(bot, callback.message, did, dd, lp, user_id=uid)
+
+        case ["disciplineWeek", did_s, wd_s, lp_s]:
+            try:
+                did = int(did_s)
+                wd = int(wd_s)
+                lp = int(lp_s)
+            except ValueError:
+                logger.error(f"Invalid disciplineWeek: {callback.data!r}")
+                return
+            await search_handlers.discipline_week_command(bot, callback.message, did, wd, lp, user_id=uid)
+
+        case ["weekTeachersList", uwd_s, page_s]:
+            try:
+                uwd = int(uwd_s)
+                p = int(page_s)
+            except ValueError:
+                logger.error(f"Invalid weekTeachersList: {callback.data!r}")
+                return
+            await search_handlers.week_teachers_list_command(bot, callback.message, uwd, p, user_id=uid)
+
+        case ["weekSubjectsList", uwd_s, page_s]:
+            try:
+                uwd = int(uwd_s)
+                p = int(page_s)
+            except ValueError:
+                logger.error(f"Invalid weekSubjectsList: {callback.data!r}")
+                return
+            await search_handlers.week_subjects_list_command(bot, callback.message, uwd, p, user_id=uid)
+
+        case ["weekTeacherOpen", lid_s, uwd_s, page_s]:
+            try:
+                lid = int(lid_s)
+                uwd = int(uwd_s)
+                lp = int(page_s)
+            except ValueError:
+                logger.error(f"Invalid weekTeacherOpen: {callback.data!r}")
+                return
+            await search_handlers.week_teacher_open_command(bot, callback.message, lid, uwd, lp, user_id=uid)
+
+        case ["weekSubjectOpen", did_s, uwd_s, page_s]:
+            try:
+                did = int(did_s)
+                uwd = int(uwd_s)
+                lp = int(page_s)
+            except ValueError:
+                logger.error(f"Invalid weekSubjectOpen: {callback.data!r}")
+                return
+            await search_handlers.week_subject_open_command(bot, callback.message, did, uwd, lp, user_id=uid)
+
+        case ["lecturerDayW", lid_s, dd_s, lp_s, uwd_s]:
+            try:
+                lid = int(lid_s)
+                dd = int(dd_s)
+                lp = int(lp_s)
+                uwd = int(uwd_s)
+            except ValueError:
+                logger.error(f"Invalid lecturerDayW: {callback.data!r}")
+                return
+            await search_handlers.lecturer_day_command(
+                bot, callback.message, lid, dd, lp, user_id=uid, from_user_week=uwd
+            )
+
+        case ["lecturerWeekW", lid_s, swd_s, lp_s, uwd_s]:
+            try:
+                lid = int(lid_s)
+                swd = int(swd_s)
+                lp = int(lp_s)
+                uwd = int(uwd_s)
+            except ValueError:
+                logger.error(f"Invalid lecturerWeekW: {callback.data!r}")
+                return
+            await search_handlers.lecturer_week_command(
+                bot, callback.message, lid, swd, lp, user_id=uid, from_user_week=uwd
+            )
+
+        case ["disciplineDayW", did_s, dd_s, lp_s, uwd_s]:
+            try:
+                did = int(did_s)
+                dd = int(dd_s)
+                lp = int(lp_s)
+                uwd = int(uwd_s)
+            except ValueError:
+                logger.error(f"Invalid disciplineDayW: {callback.data!r}")
+                return
+            await search_handlers.discipline_day_command(
+                bot, callback.message, did, dd, lp, user_id=uid, from_user_week=uwd
+            )
+
+        case ["disciplineWeekW", did_s, swd_s, lp_s, uwd_s]:
+            try:
+                did = int(did_s)
+                swd = int(swd_s)
+                lp = int(lp_s)
+                uwd = int(uwd_s)
+            except ValueError:
+                logger.error(f"Invalid disciplineWeekW: {callback.data!r}")
+                return
+            await search_handlers.discipline_week_command(
+                bot, callback.message, did, swd, lp, user_id=uid, from_user_week=uwd
+            )
 
         case _:
             logger.warning(f"Unsupported callback data: {callback.data!r}")

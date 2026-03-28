@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from .groups import GroupSearchHit, GroupsEndpoints, RuzGroupSearchItem
 from .schedule import ScheduleEndpoints, UserScheduleLesson
-from .search import SearchEndpoints
+from .search import SearchEndpoints, search_group_filters
 from .users import UserCreate, UserRead, UserUpdate, UsersEndpoints
 
 __all__ = [
@@ -11,6 +11,7 @@ __all__ = [
     "RuzGroupSearchItem",
     "ScheduleEndpoints",
     "SearchEndpoints",
+    "search_group_filters",
     "UserCreate",
     "UserRead",
     "UserUpdate",

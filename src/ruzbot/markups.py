@@ -9,6 +9,8 @@ start_markup = quick_markup({
         "Эта неделя": {'callback_data' : 'parseWeek 0'},
         # Button to view the schedule for next week
         "Следующая неделя": {'callback_data' : 'parseWeek 1'},
+        "🔍 Преподаватели": {'callback_data': 'searchTeacher'},
+        "🔍 Предметы": {'callback_data': 'searchSubject'},
         # Button to view the user's profile
         "Профиль": {'callback_data' : 'showProfile'},
     }, row_width=2)

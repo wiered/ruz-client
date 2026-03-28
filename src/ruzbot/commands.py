@@ -2,6 +2,7 @@ import logging
 from collections import defaultdict
 from datetime import datetime, timedelta
 
+from telebot import types
 from telebot.util import quick_markup
 
 from ruzbot import markups
@@ -238,13 +239,21 @@ async def weekCommand(bot, message, _timedelta, *, user_id: int):
 
     prev_week = delta_weeks - 1
     next_week = delta_weeks + 1
-    markup = quick_markup(
-        {
-            "Пред. нед.": {"callback_data": f"parseWeek {prev_week}"},
-            "Назад": {"callback_data": "start"},
-            "След. нед.": {"callback_data": f"parseWeek {next_week}"},
-        },
-        row_width=3,
+    markup = types.InlineKeyboardMarkup()
+    markup.row(
+        types.InlineKeyboardButton("Пред. нед.", callback_data=f"parseWeek {prev_week}"),
+        types.InlineKeyboardButton("Назад", callback_data="start"),
+        types.InlineKeyboardButton("След. нед.", callback_data=f"parseWeek {next_week}"),
+    )
+    markup.row(
+        types.InlineKeyboardButton(
+            "👤 На неделе",
+            callback_data=f"weekTeachersList {delta_weeks} 0",
+        ),
+        types.InlineKeyboardButton(
+            "📚 На неделе",
+            callback_data=f"weekSubjectsList {delta_weeks} 0",
+        ),
     )
 
     await bot.edit_message_text(
@@ -359,6 +368,16 @@ async def setGroup(bot, callback, group_oid: int, group_label: str) -> None:
 async def updateUserSubGroup(user_id: int, sub_group: int) -> None:
     async with ruz_client() as client:
         await client.users.update_user(user_id, UserUpdate(subgroup=sub_group))
+
+
+async def search_menu_stub_command(bot, message, *, user_id: int) -> None:
+    """Временная заглушка для «Преподаватели» / «Предметы» в главном меню."""
+    await bot.edit_message_text(
+        chat_id=message.chat.id,
+        message_id=message.message_id,
+        text="Ой, это пока что недоступно",
+        reply_markup=quick_markup({"Назад": {"callback_data": "start"}}, row_width=1),
+    )
 
 
 async def backCommand(bot, message, additional_message: str = "", *, user_id: int):
