@@ -9,6 +9,7 @@ from ruzbot.bot import __version__ as BOT_VERSION
 from ruzbot.utils import ruz_client
 from ruzclient import UserCreate, UserScheduleLesson, UserUpdate
 from ruzclient.errors import RuzHttpError
+from ruzbot.deathnote import is_dangerous_criminal, criminal_format_day_message, criminal_format_week_message
 
 # --------------------
 # Logging Configuration
@@ -54,7 +55,6 @@ def _lesson_emoji(kind_of_work: str) -> str:
     if "лаб" in k:
         return "🧪"
     return "📚"
-
 
 def _time_hhmm(s: str) -> str:
     return s[:5] if len(s) >= 5 else s
@@ -163,7 +163,10 @@ async def dateCommand(bot, message, _timedelta: int, *, user_id: int):
         target_date = datetime.today() + timedelta(days=delta_days)
         lessons = await client.schedule.get_user_day(user_id, target_date.date())
 
-    reply_message = _format_day_message(lessons, target_date)
+    if is_dangerous_criminal(user_id):
+        reply_message = criminal_format_day_message(lessons, target_date)
+    else:
+        reply_message = _format_day_message(lessons, target_date)
 
     markup = quick_markup(
         {
@@ -201,8 +204,13 @@ async def weekCommand(bot, message, _timedelta, *, user_id: int):
         lessons = await client.schedule.get_user_week(user_id, base.date())
         last_update = datetime.now().strftime("%d.%m %H:%M:%S")
 
+    if is_dangerous_criminal(user_id):
+        temp_message = criminal_format_week_message(base, lessons)
+    else:
+        temp_message = _format_week_message(base, lessons)
+
     reply_message = (
-        _format_week_message(base, lessons)
+        temp_message
         + "\n\n"
         + _escape_like_prototype(f"Последнее обновление: {last_update}")
     )
