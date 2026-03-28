@@ -168,6 +168,8 @@ async def dateCommand(bot, message, _timedelta: int, *, user_id: int):
     else:
         reply_message = _format_day_message(lessons, target_date)
 
+    reply_message = reply_message.replace("преподавател", "преподаватель")
+
     markup = quick_markup(
         {
             "Пред. день": {"callback_data": f"parseDay {delta_days - 1}"},
@@ -272,12 +274,12 @@ async def sendProfileCommand(bot, message, *, user_id: int):
 
     reply_message = (
         f"Ваш профиль: \n"
-        f"group\_oid: `{group_oid}`\n"
+        f"group\\_oid: `{group_oid}`\n"
         f"Подгруппа: `{subgroup}`\n"
         f"username: @{username}\n"
-        f"created\_at: `{created_at}`\n"
-        f"last\_used\_at: `{last_used_at}`\n"
-        f"bot\_version: `{BOT_VERSION}`"
+        f"created\\_at: `{created_at}`\n"
+        f"last\\_used\\_at: `{last_used_at}`\n"
+        f"bot\\_version: `{BOT_VERSION}`"
     )
 
     markup = quick_markup(
