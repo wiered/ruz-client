@@ -25,7 +25,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--base-url",
         default=settings.base_url,
-        help="Базовый URL сервера (например, http://localhost:8000).",
+        help="Базовый URL сервера без суффикса /api (например, http://localhost:8000).",
     )
     parser.add_argument(
         "--timeout-s",
@@ -36,13 +36,15 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--api-key",
         default=None,
-        help="X-API-Key для эндпоинта /protected (если не передан — используется TOKEN из env).",
+        help="X-API-Key для эндпоинта /api/protected (если не передан — используется TOKEN из env).",
     )
 
     sub = parser.add_subparsers(dest="command", required=True)
-    sub.add_parser("healthz", help="GET /healthz")
-    sub.add_parser("public", help="GET /public")
-    sub.add_parser("protected", help="GET /protected (требует X-API-Key)")
+    sub.add_parser("healthz", help="GET /api/healthz")
+    sub.add_parser("public", help="GET /api/public")
+    sub.add_parser("protected", help="GET /api/protected (требует X-API-Key)")
+    sub.add_parser("group", help="GET /api/group/search?q=... (поиск групп по имени)")
+    sub.add_parser("user", help="GET /api/user/{user_id} (получение пользователя по id)")
 
     return parser
 
@@ -66,6 +68,10 @@ async def run_command(*, base_url: str, timeout_s: float, api_key: Optional[str]
             resp = await client.public()
         elif command == "protected":
             resp = await client.protected(api_key=api_key)
+        elif command == "group":
+            resp = await client.groups.search_groups_by_name(q="ИС22")
+        elif command == "user":
+            resp = await client.users.get_by_id(547334624)
         else:  # pragma: no cover
             raise ValueError(f"Unknown command: {command}")
 

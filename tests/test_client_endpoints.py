@@ -25,7 +25,7 @@ async def test_healthz_returns_json() -> None:
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/healthz",
+                url=f"{BASE}/api/healthz",
                 body_text=body,
             )
         ]
@@ -42,7 +42,7 @@ async def test_healthz_returns_text_when_not_json_content_type() -> None:
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "text/plain"},
-                url=f"{BASE}/healthz",
+                url=f"{BASE}/api/healthz",
                 body_text="plain",
             )
         ]
@@ -59,7 +59,7 @@ async def test_healthz_204_returns_none() -> None:
             TransportResponse(
                 status_code=204,
                 headers={},
-                url=f"{BASE}/healthz",
+                url=f"{BASE}/api/healthz",
                 body_text="",
             )
         ]
@@ -71,14 +71,14 @@ async def test_healthz_204_returns_none() -> None:
 
 @pytest.mark.asyncio
 async def test_healthz_strips_api_suffix_from_base_url() -> None:
-    """`/healthz` lives at app root; base_url may end with `/api`."""
+    """`BASE_URL` may end with `/api`; пути клиента всё равно `api/...` без дубля."""
     base_with_api = "http://127.0.0.1:2201/api"
     fake = FakeTransport(
         [
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url="http://127.0.0.1:2201/healthz",
+                url="http://127.0.0.1:2201/api/healthz",
                 body_text=json.dumps({"ok": True}),
             )
         ]
@@ -87,7 +87,7 @@ async def test_healthz_strips_api_suffix_from_base_url() -> None:
     async with RuzClient(cfg, transport=fake) as client:
         out = await client.healthz()
     assert out == {"ok": True}
-    assert fake.calls[0]["url"] == "http://127.0.0.1:2201/healthz"
+    assert fake.calls[0]["url"] == "http://127.0.0.1:2201/api/healthz"
 
 
 @pytest.mark.asyncio
@@ -97,7 +97,7 @@ async def test_public_ok_without_token(no_token) -> None:
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/public",
+                url=f"{BASE}/api/public",
                 body_text=json.dumps({"open": True}),
             )
         ]
@@ -114,7 +114,7 @@ async def test_public_sends_x_api_key_from_env(env_api_key: str) -> None:
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/public",
+                url=f"{BASE}/api/public",
                 body_text=json.dumps({"ok": True}),
             )
         ]
@@ -131,7 +131,7 @@ async def test_public_sends_x_api_key_from_config(no_token) -> None:
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/public",
+                url=f"{BASE}/api/public",
                 body_text=json.dumps({"ok": True}),
             )
         ]
@@ -149,7 +149,7 @@ async def test_protected_ok_with_config_api_key(no_token) -> None:
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/protected",
+                url=f"{BASE}/api/protected",
                 body_text=json.dumps({"data": 1}),
             )
         ]
@@ -167,7 +167,7 @@ async def test_protected_ok_with_explicit_api_key_arg(no_token) -> None:
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/protected",
+                url=f"{BASE}/api/protected",
                 body_text=json.dumps({"ok": True}),
             )
         ]
@@ -184,7 +184,7 @@ async def test_protected_401_raises_auth_error(no_token) -> None:
             TransportResponse(
                 status_code=401,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/protected",
+                url=f"{BASE}/api/protected",
                 body_text=json.dumps({"detail": "nope"}),
             )
         ]
@@ -202,7 +202,7 @@ async def test_protected_403_raises_auth_error(no_token) -> None:
             TransportResponse(
                 status_code=403,
                 headers={},
-                url=f"{BASE}/protected",
+                url=f"{BASE}/api/protected",
                 body_text="forbidden",
             )
         ]
@@ -219,7 +219,7 @@ async def test_protected_500_raises_http_error(no_token) -> None:
             TransportResponse(
                 status_code=500,
                 headers={},
-                url=f"{BASE}/protected",
+                url=f"{BASE}/api/protected",
                 body_text="srv err",
             )
         ]
@@ -238,7 +238,7 @@ async def test_public_404_raises_http_error(no_token) -> None:
             TransportResponse(
                 status_code=404,
                 headers={},
-                url=f"{BASE}/public",
+                url=f"{BASE}/api/public",
                 body_text="missing",
             )
         ]

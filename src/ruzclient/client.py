@@ -7,6 +7,8 @@ from typing import Any, Mapping, Optional
 from .auth import API_KEY_HEADER_NAME, get_api_key
 from .errors import RuzAuthError, RuzHttpError
 from .http import AiohttpTransport
+from .http.endpoints.groups import GroupsEndpoints
+from .http.endpoints.users import UsersEndpoints
 from .http.transport import AsyncHttpTransport, TransportResponse
 
 
@@ -19,20 +21,25 @@ def _normalize_base_url(base_url: str, *, default_scheme: str = "http", default_
 
     cleaned = base_url.strip().rstrip("/")
     if cleaned.startswith("http://") or cleaned.startswith("https://"):
-        return cleaned
-
-    # Отделяем "хост/порт" от возможного пути (/api).
-    if "/" in cleaned:
-        host_part, rest = cleaned.split("/", 1)
-        rest = "/" + rest if rest else ""
+        out = cleaned
     else:
-        host_part, rest = cleaned, ""
+        # Отделяем "хост/порт" от возможного пути (/api).
+        if "/" in cleaned:
+            host_part, rest = cleaned.split("/", 1)
+            rest = "/" + rest if rest else ""
+        else:
+            host_part, rest = cleaned, ""
 
-    # Если порт не указан, добавляем default_port.
-    if ":" not in host_part:
-        host_part = f"{host_part}:{default_port}"
+        # Если порт не указан, добавляем default_port.
+        if ":" not in host_part:
+            host_part = f"{host_part}:{default_port}"
 
-    return f"{default_scheme}://{host_part}{rest}"
+        out = f"{default_scheme}://{host_part}{rest}"
+
+    # Эндпоинты задаются путями вида `api/...`; суффикс `/api` в BASE_URL не дублируем.
+    if out.endswith("/api"):
+        out = out[: -len("/api")]
+    return out
 
 
 def _content_type_lower(headers: Mapping[str, str]) -> str:
@@ -92,6 +99,19 @@ class RuzClient:
             self._transport = AiohttpTransport(timeout_s=config.timeout_s)
             self._own_transport = True
 
+        self._groups = GroupsEndpoints(self)
+        self._users = UsersEndpoints(self)
+
+    @property
+    def groups(self) -> GroupsEndpoints:
+        """Эндпоинты групп, например ``await client.groups.search_groups_by_name("ИС22")``."""
+        return self._groups
+
+    @property
+    def users(self) -> UsersEndpoints:
+        """Эндпоинты пользователей: ``create_user``, ``get_by_id``, …"""
+        return self._users
+
     async def aclose(self) -> None:
         if self._own_transport:
             await self._transport.aclose()
@@ -106,28 +126,6 @@ class RuzClient:
         if path.startswith("http://") or path.startswith("https://"):
             return path
         base_url = self._config.base_url.rstrip("/")
-        path_norm = path.lstrip("/")
-        if not path_norm:
-            return base_url
-        return f"{base_url}/{path_norm}"
-
-    def _normalize_root_path(self, path: str) -> str:
-        """
-        Нормализует путь относительно "корня" сервера.
-
-        В ваших доках встречается `BASE_URL` вида `http://host:8000/api`,
-        но эндпоинты `/public`, `/protected`, `/healthz` объявлены в `app.py`
-        без префикса `/api`. Поэтому, если base_url заканчивается на `/api`,
-        отрежем его для этих методов.
-        """
-
-        if path.startswith("http://") or path.startswith("https://"):
-            return path
-
-        base_url = self._config.base_url.rstrip("/")
-        if base_url.endswith("/api"):
-            base_url = base_url[: -len("/api")]
-
         path_norm = path.lstrip("/")
         if not path_norm:
             return base_url
@@ -313,14 +311,14 @@ class RuzClient:
 
     async def public(self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None) -> Any:
         """
-        GET `/public`.
+        GET `/api/public`.
 
         Эндпоинт публичный, но заголовок `X-API-Key` не мешает (если токен доступен).
         """
 
         return await self.request(
             "GET",
-            self._normalize_root_path("/public"),
+            self._normalize_path("public"),
             api_key=api_key,
             timeout_s=timeout_s,
         )
@@ -329,27 +327,27 @@ class RuzClient:
         self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None
     ) -> Any:
         """
-        GET `/protected`.
+        GET `/api/protected`.
 
         Требует `X-API-Key` (авторизация на стороне сервера).
         """
 
         return await self.request(
             "GET",
-            self._normalize_root_path("/protected"),
+            self._normalize_path("protected"),
             api_key=api_key,
             timeout_s=timeout_s,
         )
 
     async def healthz(self, *, timeout_s: Optional[float] = None) -> Any:
         """
-        GET `/healthz`.
+        GET `/api/healthz`.
 
         Эндпоинт состояния сервера.
         """
 
         return await self.request(
             "GET",
-            self._normalize_root_path("/healthz"),
+            self._normalize_path("healthz"),
             timeout_s=timeout_s,
         )

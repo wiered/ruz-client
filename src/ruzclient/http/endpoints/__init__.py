@@ -1,11 +1,13 @@
 from __future__ import annotations
 
-from .search import RuzGroupSearchItem, search_groups_by_name
-from .users import UserCreate, create_user
+from .groups import GroupSearchHit, GroupsEndpoints, RuzGroupSearchItem
+from .users import UserCreate, UserRead, UsersEndpoints
 
 __all__ = [
+    "GroupSearchHit",
+    "GroupsEndpoints",
     "RuzGroupSearchItem",
     "UserCreate",
-    "create_user",
-    "search_groups_by_name",
+    "UserRead",
+    "UsersEndpoints",
 ]
