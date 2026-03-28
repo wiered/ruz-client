@@ -47,8 +47,8 @@ def _append_donation_footer(text: str, parse_mode: Optional[str]) -> str:
     if not url:
         return text
     if parse_mode == "MarkdownV2":
-        return text + "\n\n" + mlink("Админ собирает деньхи на кофе :)", url)
-    return text + f"\n\nАдмин собирает деньхи на кофе :)\n{url}"
+        return text + "\n\n" + mlink("Админ собирает деньги на кофе :)", url)
+    return text + f"\n\nАдмин собирает деньги на кофе :)\n{url}"
 
 
 class RuzBot(AsyncTeleBot):
