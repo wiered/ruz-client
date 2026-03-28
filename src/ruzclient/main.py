@@ -6,6 +6,8 @@ import json
 import sys
 from typing import Any, Optional
 
+from ruzclient.http import HttpxTransport
+
 from .client import ClientConfig, RuzClient
 from .errors import RuzClientError
 from .settings import settings
@@ -46,13 +48,15 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 async def run_command(*, base_url: str, timeout_s: float, api_key: Optional[str], command: str) -> None:
+    transport = HttpxTransport(timeout_s=timeout_s)
     client = RuzClient(
         ClientConfig(
             base_url=base_url,
             timeout_s=timeout_s,
             api_key=api_key,
             default_headers=settings.default_headers,
-        )
+        ),
+        transport=transport,
     )
 
     async with client:
@@ -66,6 +70,7 @@ async def run_command(*, base_url: str, timeout_s: float, api_key: Optional[str]
             raise ValueError(f"Unknown command: {command}")
 
     _print_response(resp)
+    await transport.aclose()
 
 
 def main(argv: Optional[list[str]] = None) -> int:

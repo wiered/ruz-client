@@ -1,10 +1,13 @@
 from __future__ import annotations
 
+import json
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional
 
 from .auth import API_KEY_HEADER_NAME, get_api_key
-from .errors import RuzAuthError, RuzClientError, RuzHttpError
+from .errors import RuzAuthError, RuzHttpError
+from .http import AiohttpTransport
+from .http.transport import AsyncHttpTransport, TransportResponse
 
 
 def _normalize_base_url(base_url: str, *, default_scheme: str = "http", default_port: int = 2201) -> str:
@@ -32,6 +35,13 @@ def _normalize_base_url(base_url: str, *, default_scheme: str = "http", default_
     return f"{default_scheme}://{host_part}{rest}"
 
 
+def _content_type_lower(headers: Mapping[str, str]) -> str:
+    for k, v in headers.items():
+        if k.lower() == "content-type":
+            return v.lower()
+    return ""
+
+
 @dataclass(frozen=True)
 class ClientConfig:
     base_url: str
@@ -54,14 +64,13 @@ class RuzClient:
     - парсинг JSON/текста
     """
 
-    def __init__(self, config: ClientConfig, *, client: Optional[Any] = None) -> None:
-        # Нормализуем `base_url`, чтобы работали значения вида:
-        # - `127.0.0.1`
-        # - `127.0.0.1:8080`
-        # - `http://127.0.0.1:8080/api`
-        #
-        # В `ruz-server/.env` порт по умолчанию 8080, поэтому используем его,
-        # когда порт не задан.
+    def __init__(
+        self,
+        config: ClientConfig,
+        *,
+        transport: Optional[AsyncHttpTransport] = None,
+        client: Optional[Any] = None,
+    ) -> None:
         self._config = ClientConfig(
             base_url=_normalize_base_url(config.base_url),
             timeout_s=config.timeout_s,
@@ -70,24 +79,22 @@ class RuzClient:
             default_headers=config.default_headers,
         )
 
-        self._own_client = client is None
-        if client is not None:
-            self._client = client
-        else:
-            try:
-                import aiohttp  # type: ignore
-            except ImportError as e:  # pragma: no cover
-                raise ImportError(
-                    "aiohttp is required for RuzClient. Install it with `pip install aiohttp`."
-                ) from e
+        if transport is not None and client is not None:
+            raise ValueError("Pass only one of `transport` or `client`, not both.")
 
-            self._client = aiohttp.ClientSession(
-                timeout=aiohttp.ClientTimeout(total=config.timeout_s),
-            )
+        if transport is not None:
+            self._transport = transport
+            self._own_transport = False
+        elif client is not None:
+            self._transport = AiohttpTransport(session=client)
+            self._own_transport = False
+        else:
+            self._transport = AiohttpTransport(timeout_s=config.timeout_s)
+            self._own_transport = True
 
     async def aclose(self) -> None:
-        if self._own_client:
-            await self._client.close()
+        if self._own_transport:
+            await self._transport.aclose()
 
     async def __aenter__(self) -> "RuzClient":
         return self
@@ -96,8 +103,6 @@ class RuzClient:
         await self.aclose()
 
     def _normalize_path(self, path: str) -> str:
-        # aiohttp не имеет встроенного `base_url` в запросах, поэтому
-        # делаем конкатенацию базового URL и path вручную.
         if path.startswith("http://") or path.startswith("https://"):
             return path
         base_url = self._config.base_url.rstrip("/")
@@ -159,6 +164,37 @@ class RuzClient:
 
         return merged
 
+    def _apply_response_policy(self, method: str, resp: TransportResponse) -> Any:
+        if resp.status_code in (401, 403):
+            snippet = resp.body_text[:1000]
+            raise RuzAuthError(
+                f"Authorization failed with status {resp.status_code}: {snippet!r}"
+            )
+
+        if resp.status_code >= 400:
+            message = resp.body_text.strip()[:1000] or f"HTTP {resp.status_code}"
+            raise RuzHttpError(
+                status_code=resp.status_code,
+                message=message,
+                method=method.upper(),
+                url=resp.url,
+                response_text=resp.body_text,
+            )
+
+        if resp.status_code == 204:
+            return None
+
+        content_type = _content_type_lower(resp.headers)
+        if "application/json" in content_type:
+            try:
+                return json.loads(resp.body_text)
+            except Exception:
+                # Если сервер заявил JSON, но вернул битый payload,
+                # отдаём текст для диагностики.
+                return resp.body_text
+
+        return resp.body_text
+
     async def request(
         self,
         method: str,
@@ -184,60 +220,16 @@ class RuzClient:
 
         timeout_value = timeout_s if timeout_s is not None else self._config.timeout_s
 
-        # `aiohttp` задаёт таймаут через `ClientTimeout`. Для per-request override
-        # создаём новый объект.
-        try:
-            import aiohttp  # type: ignore
-        except ImportError as e:  # pragma: no cover
-            raise ImportError(
-                "aiohttp is required for RuzClient. Install it with `pip install aiohttp`."
-            ) from e
-
-        timeout = aiohttp.ClientTimeout(total=timeout_value)
-
-        try:
-            async with self._client.request(
-                method,
-                url_or_path,
-                params=params,
-                json=json,
-                data=data,
-                headers=merged_headers or None,
-                timeout=timeout,
-            ) as resp:
-                if resp.status in (401, 403):
-                    response_text = await resp.text()
-                    raise RuzAuthError(
-                        f"Authorization failed with status {resp.status}: {response_text[:1000]!r}"
-                    )
-
-                if resp.status >= 400:
-                    # Пытаемся отдать осмысленное сообщение (если сервер присылает JSON с detail/message).
-                    response_text = await resp.text()
-                    message = response_text.strip()[:1000] or f"HTTP {resp.status}"
-                    raise RuzHttpError(
-                        status_code=resp.status,
-                        message=message,
-                        method=method.upper(),
-                        url=str(resp.url),
-                        response_text=response_text,
-                    )
-
-                if resp.status == 204:
-                    return None
-
-                content_type = resp.headers.get("Content-Type", "").lower()
-                if "application/json" in content_type:
-                    try:
-                        return await resp.json()
-                    except Exception:
-                        # Если сервер заявил JSON, но вернул битый payload,
-                        # отдаём текст для диагностики.
-                        return await resp.text()
-
-                return await resp.text()
-        except aiohttp.ClientError as e:
-            raise RuzClientError(f"Network error: {e}") from e
+        resp = await self._transport.send(
+            method,
+            url_or_path,
+            params=params,
+            json=json,
+            data=data,
+            headers=merged_headers or None,
+            timeout_s=timeout_value,
+        )
+        return self._apply_response_policy(method, resp)
 
     async def get(
         self,
@@ -361,4 +353,3 @@ class RuzClient:
             self._normalize_root_path("/healthz"),
             timeout_s=timeout_s,
         )
-
