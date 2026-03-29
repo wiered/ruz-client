@@ -38,6 +38,17 @@ _DAYS_RU = (
     "Воскресенье",
 )
 
+_LESSON_NUMBER_MAP = {
+    "08:30": "1",
+    "10:10": "2",
+    "12:40": "3",
+    "14:20": "4",
+    "16:00": "5",
+    "18:00": "6",
+    "19:40": "7",
+    "20:00": "7"
+}
+
 
 def _escape_like_prototype(schedule_text: str) -> str:
     """Тот же приём, что в bot_prototype.start: символы MarkdownV2, кроме `*`."""
@@ -77,7 +88,7 @@ def _lesson_type_mapper(kind_of_work: str) -> str:
     else:
         return kind_of_work
 
-def _format_lesson_block(les: UserScheduleLesson, n: int) -> str:
+def _format_lesson_block(les: UserScheduleLesson) -> str:
     t1 = _time_hhmm(les["begin_lesson"])
     t2 = _time_hhmm(les["end_lesson"])
     emoji = _lesson_emoji(les["kind_of_work"])
@@ -85,7 +96,7 @@ def _format_lesson_block(les: UserScheduleLesson, n: int) -> str:
     bld = les["building"] or ""
     aud_line = f"{aud}" + (f" ({bld})" if bld else "")
     return (
-        f"-- *{n} пара {t1} - {t2}* --\n"
+        f"-- *{_LESSON_NUMBER_MAP.get(t1)} пара {t1} - {t2}* --\n"
         f"  {emoji} {les['discipline_name']} ({_lesson_type_mapper(les['kind_of_work'])})\n"
         f"  Аудитория: {aud_line}\n"
         f"  Преподаватель: {les['lecturer_short_name']}"
@@ -103,7 +114,7 @@ def _format_day_message(lessons: list[UserScheduleLesson], target: datetime) -> 
         lines.append("  😴 Пар нет")
     else:
         for n, les in enumerate(sorted(lessons, key=lambda x: (x["begin_lesson"], x["lesson_id"]))):
-            lines.append(_format_lesson_block(les, n + 1))
+            lines.append(_format_lesson_block(les))
     return _escape_like_prototype("\n".join(lines))
 
 
@@ -128,7 +139,7 @@ def _format_week_message(anchor: datetime, lessons: list[UserScheduleLesson]) ->
         day_entries = by_date.get(d_iso, [])
         if day_entries:
             for n, les in enumerate(sorted(day_entries, key=lambda x: (x["begin_lesson"], x["lesson_id"]))):
-                lines.append(_format_lesson_block(les, n + 1))
+                lines.append(_format_lesson_block(les))
         else:
             lines.append("  😴 Пар нет")
 
