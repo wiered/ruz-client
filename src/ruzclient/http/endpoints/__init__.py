@@ -5,6 +5,7 @@ from .lecturers import Lecturer
 from .schedule import ScheduleEndpoints, UserScheduleLesson
 from .search import SearchEndpoints, search_group_filters
 from .users import UserCreate, UserRead, UserUpdate, UsersEndpoints
+from .disciplines import DisciplinesEndpoints, Discipline
 
 __all__ = [
     "GroupSearchHit",
@@ -19,4 +20,6 @@ __all__ = [
     "UserUpdate",
     "UserScheduleLesson",
     "UsersEndpoints",
+    "DisciplinesEndpoints",
+    "Discipline",
 ]
