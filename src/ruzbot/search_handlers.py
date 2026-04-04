@@ -14,7 +14,7 @@ from telebot.util import quick_markup
 
 from ruzbot import commands
 from ruzbot.deathnote import criminal_format_day_message, criminal_format_week_message, is_dangerous_criminal
-from ruzbot.utils import ruz_client
+from ruzbot.utils import ruz_client, remove_position
 from ruzclient import UserScheduleLesson
 from ruzclient.errors import RuzHttpError
 
@@ -592,7 +592,7 @@ async def week_teachers_list_command(bot, message, user_week_delta: int, page: i
     for pair in _chunk_list(display, 2):
         row = [
             types.InlineKeyboardButton(
-                _btn_label("👤", title),
+                _btn_label("👤", (remove_position(title))),
                 callback_data=f"weekTeacherOpen {lid} {user_week_delta} {page}",
             )
             for lid, title in pair
