@@ -63,7 +63,7 @@ def _unique_disciplines_from_lessons(lessons: list[UserScheduleLesson]) -> list[
 async def search_teacher_list_command(bot, message, page: int, *, user_id: int) -> None:
     async with ruz_client() as client:
         try:
-            raw = await client.get("api/lecturer/")
+            lecturers = await client.lecturers.list_lecturers()
         except RuzHttpError as e:
             logger.error("lecturer list failed: %s", e)
             await bot.edit_message_text(
@@ -72,16 +72,6 @@ async def search_teacher_list_command(bot, message, page: int, *, user_id: int) 
                 text=_commands_escape(f"Не удалось загрузить список преподавателей: HTTP {e.status_code}"),
             )
             return
-
-    if not isinstance(raw, list):
-        await bot.edit_message_text(
-            chat_id=message.chat.id,
-            message_id=message.message_id,
-            text="Список преподавателей в неожиданном формате.",
-        )
-        return
-
-    lecturers: list[dict] = raw
     total = len(lecturers)
     if total == 0:
         await bot.edit_message_text(
@@ -126,31 +116,13 @@ async def search_teacher_list_command(bot, message, page: int, *, user_id: int) 
 
 async def teacher_card_command(bot, message, lecturer_id: int, list_page: int, *, user_id: int) -> None:
     async with ruz_client() as client:
-        try:
-            raw = await client.get(f"api/lecturer/{lecturer_id}")
-        except RuzHttpError as e:
-            if e.status_code == 404:
-                text = "Преподаватель не найден."
-            else:
-                text = f"Ошибка загрузки: HTTP {e.status_code}"
-            await bot.edit_message_text(
-                chat_id=message.chat.id,
-                message_id=message.message_id,
-                text=_commands_escape(text),
-                reply_markup=quick_markup({"Назад": {"callback_data": f"teacherPage {list_page}"}}, row_width=1),
-            )
-            return
+        lecturer = await client.lecturers.get_lecturer(lecturer_id)
 
-    if not isinstance(raw, dict):
-        await bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text="Некорректный ответ API.")
-        return
-
-    lec = raw
     body = (
         f"👤 Преподаватель\n"
-        f"🆔 ID: {lec.get('id')}\n"
-        f"📛 Имя: {lec.get('full_name', '')}\n"
-        f"🎓 Должность: {lec.get('rank', '')}"
+        f"🆔 ID: {lecturer.id}\n"
+        f"📛 Имя: {lecturer.full_name}\n"
+        f"🎓 Должность: {lecturer.rank}"
     )
     markup = quick_markup(
         {
@@ -202,12 +174,12 @@ async def lecturer_day_command(
             return
 
         try:
-            raw = await client.get(f"api/lecturer/{lecturer_id}")
-        except RuzHttpError:
-            raw = None
+            lecturer = await client.lecturers.get_lecturer(lecturer_id)
+        except (RuzHttpError, ValueError):
+            lecturer = None
     name = ""
-    if isinstance(raw, dict):
-        name = raw.get("full_name") or raw.get("short_name") or ""
+    if lecturer is not None:
+        name = lecturer.get("full_name") or lecturer.get("short_name") or ""
 
     if is_dangerous_criminal(user_id):
         body = criminal_format_day_message(lessons, target)
@@ -266,12 +238,12 @@ async def lecturer_week_command(
             return
 
         try:
-            raw = await client.get(f"api/lecturer/{lecturer_id}")
-        except RuzHttpError:
-            raw = None
+            lecturer = await client.lecturers.get_lecturer(lecturer_id)
+        except (RuzHttpError, ValueError):
+            lecturer = None
     name = ""
-    if isinstance(raw, dict):
-        name = raw.get("full_name") or raw.get("short_name") or ""
+    if lecturer is not None:
+        name = lecturer.get("full_name") or lecturer.get("short_name") or ""
 
     last_update = datetime.now().strftime("%d.%m %H:%M:%S")
     if is_dangerous_criminal(user_id):
@@ -620,12 +592,20 @@ async def week_teacher_open_command(
 ) -> None:
     async with ruz_client() as client:
         try:
-            raw = await client.get(f"api/lecturer/{lecturer_id}")
+            lec = await client.lecturers.get_lecturer(lecturer_id)
+        except ValueError:
+            await bot.edit_message_text(
+                chat_id=message.chat.id,
+                message_id=message.message_id,
+                text=_commands_escape("Преподаватель не найден."),
+                reply_markup=quick_markup(
+                    {"Назад": {"callback_data": f"weekTeachersList {user_week_delta} {list_page}"}},
+                    row_width=1,
+                ),
+            )
+            return
         except RuzHttpError as e:
-            if e.status_code == 404:
-                text = "Преподаватель не найден."
-            else:
-                text = f"Ошибка загрузки: HTTP {e.status_code}"
+            text = f"Ошибка загрузки: HTTP {e.status_code}"
             await bot.edit_message_text(
                 chat_id=message.chat.id,
                 message_id=message.message_id,
@@ -636,12 +616,6 @@ async def week_teacher_open_command(
                 ),
             )
             return
-
-    if not isinstance(raw, dict):
-        await bot.edit_message_text(chat_id=message.chat.id, message_id=message.message_id, text="Некорректный ответ API.")
-        return
-
-    lec = raw
     body = (
         f"👤 Преподаватель\n"
         f"🆔 ID: {lec.get('id')}\n"
