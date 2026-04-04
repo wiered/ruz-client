@@ -88,18 +88,23 @@ def _lesson_type_mapper(kind_of_work: str) -> str:
     else:
         return kind_of_work
 
+def _remove_position(lecturer_short_name: str) -> str:
+    parts = lecturer_short_name.split()
+    return " ".join(parts[-2:]) if len(parts) >= 2 else lecturer_short_name
+
 def _format_lesson_block(les: UserScheduleLesson) -> str:
     t1 = _time_hhmm(les["begin_lesson"])
     t2 = _time_hhmm(les["end_lesson"])
     emoji = _lesson_emoji(les["kind_of_work"])
     aud = les["auditorium_name"] or ""
-    bld = les["building"] or ""
-    aud_line = f"{aud}" + (f" ({bld})" if bld else "")
+    # bld = les["building"] or ""
+    aud_line = f"{aud}"
+    #  + (f" ({bld})" if bld else "")
     return (
         f"-- *{_LESSON_NUMBER_MAP.get(t1)} пара {t1} - {t2}* --\n"
         f"  {emoji} {les['discipline_name']} ({_lesson_type_mapper(les['kind_of_work'])})\n"
         f"  Аудитория: {aud_line}\n"
-        f"  Преподаватель: {les['lecturer_short_name']}"
+        f"  Преподаватель: {_remove_position(les['lecturer_short_name'])}"
     )
 
 
