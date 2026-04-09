@@ -7,7 +7,7 @@ from telebot.util import quick_markup
 
 from ruzbot import markups
 from ruzbot.bot import __version__ as BOT_VERSION
-from ruzbot.utils import ruz_client
+from ruzbot.utils import ruz_client, remove_position
 from ruzclient import UserCreate, UserScheduleLesson, UserUpdate
 from ruzclient.errors import RuzHttpError
 from ruzbot.deathnote import is_dangerous_criminal, criminal_format_day_message, criminal_format_week_message
@@ -49,13 +49,11 @@ _LESSON_NUMBER_MAP = {
     "20:00": "7"
 }
 
-
 def _escape_like_prototype(schedule_text: str) -> str:
     """Тот же приём, что в bot_prototype.start: символы MarkdownV2, кроме `*`."""
     for char in _PROTOTYPE_ESCAPE_CHARS:
         schedule_text = schedule_text.replace(char, "\\" + char)
     return schedule_text
-
 
 def _lesson_emoji(kind_of_work: str) -> str:
     """📚 лекция, ✏ практика, 🧪 лаб — по аналогии с EMOJIES в bot_prototype."""
@@ -88,10 +86,6 @@ def _lesson_type_mapper(kind_of_work: str) -> str:
     else:
         return kind_of_work
 
-def _remove_position(lecturer_short_name: str) -> str:
-    parts = lecturer_short_name.split()
-    return " ".join(parts[-2:]) if len(parts) >= 2 else lecturer_short_name
-
 def _format_lesson_block(les: UserScheduleLesson) -> str:
     t1 = _time_hhmm(les["begin_lesson"])
     t2 = _time_hhmm(les["end_lesson"])
@@ -104,7 +98,7 @@ def _format_lesson_block(les: UserScheduleLesson) -> str:
         f"-- *{_LESSON_NUMBER_MAP.get(t1)} пара {t1} - {t2}* --\n"
         f"  {emoji} {les['discipline_name']} ({_lesson_type_mapper(les['kind_of_work'])})\n"
         f"  Аудитория: {aud_line}\n"
-        f"  Преподаватель: {_remove_position(les['lecturer_short_name'])}"
+        f"  Преподаватель: {remove_position(les['lecturer_short_name'])}"
     )
 
 
@@ -315,11 +309,12 @@ async def sendProfileCommand(bot, message, *, user_id: int):
         created_at = user.get("created_at")
         last_used_at = user.get("last_used_at")
 
+    safe_username = _escape_like_prototype(username or "")
     reply_message = (
         f"Ваш профиль: \n"
         f"group\\_oid: `{group_oid}`\n"
         f"Подгруппа: `{subgroup}`\n"
-        f"username: @{username}\n"
+        f"username: @{safe_username}\n"
         f"created\\_at: `{created_at}`\n"
         f"last\\_used\\_at: `{last_used_at}`\n"
         f"bot\\_version: `{BOT_VERSION}`"
