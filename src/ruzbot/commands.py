@@ -309,11 +309,12 @@ async def sendProfileCommand(bot, message, *, user_id: int):
         created_at = user.get("created_at")
         last_used_at = user.get("last_used_at")
 
+    safe_username = _escape_like_prototype(username or "")
     reply_message = (
         f"Ваш профиль: \n"
         f"group\\_oid: `{group_oid}`\n"
         f"Подгруппа: `{subgroup}`\n"
-        f"username: @{username}\n"
+        f"username: @{safe_username}\n"
         f"created\\_at: `{created_at}`\n"
         f"last\\_used\\_at: `{last_used_at}`\n"
         f"bot\\_version: `{BOT_VERSION}`"
