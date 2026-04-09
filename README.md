@@ -1,6 +1,6 @@
 # ruz-client
 
-`ruz-client` - асинхронный Python-клиент для `ruz-server` и Telegram-бот для работы с расписанием.
+`ruz-client` - асинхронный Python-клиент для [ruz-server](https://github.com/wiered/ruz-server) и Telegram-бот для работы с расписанием.
 
 В репозитории есть две основные части:
 
