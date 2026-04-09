@@ -6,6 +6,7 @@ from telebot.util import quick_markup
 
 from ruzbot import commands, search_handlers
 from ruzbot.utils import getRandomGroup, ruz_client
+from ruzclient.errors import RuzHttpError
 
 
 # --------------------
@@ -62,14 +63,33 @@ async def textCallbackHandler(callback, bot: AsyncTeleBot):
 
         case (2,):
             sub_group_number = int(callback.text)
-            logger.debug(
-                f"Sub-group selection detected: {sub_group_number} for user_id={callback.from_user.id}"
-            )
-            await commands.updateUserSubGroup(callback.from_user.id, sub_group_number)
-            message = await bot.reply_to(callback, "Ваша группа и подгруппа установлены!")
-            logger.info(f"Updated sub_group={sub_group_number} for user_id={callback.from_user.id}")
-
-            await commands.sendProfileCommand(bot, message, user_id=callback.from_user.id)
+            if sub_group_number not in (0, 1, 2):
+                await bot.reply_to(
+                    callback,
+                    "Для подгруппы допустимы только 0, 1 или 2. Введите одну цифру.",
+                )
+                return
+            uid = callback.from_user.id
+            async with ruz_client() as client:
+                try:
+                    u = await client.users.get_by_id(uid)
+                except RuzHttpError as e:
+                    if e.status_code == 404:
+                        u = None
+                    else:
+                        raise
+            if u is None:
+                await bot.reply_to(
+                    callback,
+                    "Сначала выберите группу через «Установить группу» или /start.",
+                )
+                return
+            prev = u.get("subgroup")
+            logger.debug(f"Sub-group set/update: {sub_group_number} for user_id={uid}")
+            await commands.updateUserSubGroup(uid, sub_group_number)
+            msg = "Регистрация завершена." if prev is None else "Подгруппа обновлена."
+            message = await bot.reply_to(callback, msg)
+            await commands.sendProfileCommand(bot, message, user_id=uid)
 
         case _:
             logger.warning(f"Wrong case in textCallbackHandler: {callback.text!r}")
@@ -104,10 +124,6 @@ async def buttonsCallback(callback, bot: AsyncTeleBot):
             logger.debug("Button 'configureGroup' pressed")
             await commands.setGroupCommand(bot, callback.message, user_id=uid)
 
-        case ["configureSubGroup"]:
-            logger.debug("Button 'configureSubGroup' pressed")
-            await commands.setSubGroupCommand(bot, callback.message, user_id=uid)
-
         case ["setGroup", *rest]:
             if not rest:
                 logger.error("setGroup callback missing oid")
@@ -121,8 +137,9 @@ async def buttonsCallback(callback, bot: AsyncTeleBot):
             logger.debug(
                 f"Button 'setGroup' pressed with group_oid={group_oid}, label={group_label!r}"
             )
-            await commands.setGroup(bot, callback, group_oid, group_label)
-            await commands.setSubGroupCommand(bot, callback.message, user_id=uid)
+            needs_subgroup = await commands.setGroup(bot, callback, group_oid, group_label)
+            if needs_subgroup:
+                await commands.setSubGroupCommand(bot, callback.message, user_id=uid)
 
         case ["searchTeacher"]:
             # await search_handlers.search_teacher_list_command(bot, callback.message, 0, user_id=uid)

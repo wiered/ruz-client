@@ -92,7 +92,7 @@ bot = RuzBot(__version__)
 @bot.message_handler(commands=["start"])
 async def startCommand(message):
     """
-    /start: главное меню или подсказки, если не заданы группа или подгруппа.
+    /start: главное меню или подсказки по регистрации (группа / незавершённая регистрация).
     """
     reply_message = (
         "Привет, я бот для просмотра расписания МГТУ. Что хочешь узнать?\n"
@@ -108,7 +108,18 @@ async def startCommand(message):
             else:
                 raise
 
-        if user is None or not user.get("group_oid"):
+        if user is not None and user.get("group_oid") and user.get("subgroup") is not None:
+            pass
+        elif user is not None and user.get("group_oid") and user.get("subgroup") is None:
+            markup = quick_markup(
+                {"Выбрать другую группу": {"callback_data": "configureGroup"}},
+                row_width=1,
+            )
+            reply_message = (
+                "Привет, я бот для просмотра расписания МГТУ.\n"
+                "Группа выбрана — введите одну цифру подгруппы: 0, 1 или 2, чтобы завершить регистрацию.\n"
+            )
+        else:
             markup = quick_markup(
                 {"Установить группу": {"callback_data": "configureGroup"}},
                 row_width=1,
@@ -116,15 +127,6 @@ async def startCommand(message):
             reply_message = (
                 "Привет, я бот для просмотра расписания МГТУ. "
                 "У тебя не установлена группа, друг.\n"
-            )
-        elif user.get("subgroup", 0) == 0:
-            markup = quick_markup(
-                {"Установить подгруппу": {"callback_data": "configureSubGroup"}},
-                row_width=1,
-            )
-            reply_message = (
-                "Привет, я бот для просмотра расписания МГТУ. "
-                "У тебя не установлена подгруппа, друг.\n"
             )
 
     await bot.reply_to(message, reply_message, reply_markup=markup)

@@ -5,7 +5,7 @@ import json
 import pytest
 
 from ruzclient.client import ClientConfig, RuzClient
-from ruzclient.http.endpoints import UserCreate
+from ruzclient.http.endpoints import UserCreate, UserUpdate
 from ruzclient.http.transport import TransportResponse
 from tests.fake_transport import FakeTransport
 
@@ -99,6 +99,94 @@ async def test_create_user_posts_json_body() -> None:
         "faculty_name": "F",
     }
     assert out == created
+
+
+@pytest.mark.asyncio
+async def test_create_user_posts_null_subgroup() -> None:
+    """Создание с незаданной подгруппой: в JSON уходит явный ``null``."""
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=201,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/user/",
+                body_text=json.dumps(
+                    {
+                        "id": 1,
+                        "username": "x",
+                        "group_oid": 2,
+                        "subgroup": None,
+                        "created_at": "2020-01-01T00:00:00",
+                        "last_used_at": "2020-01-01T00:00:00",
+                    }
+                ),
+            )
+        ]
+    )
+    payload = UserCreate(id=1, username="x", group_oid=2)
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        await client.users.create_user(payload)
+    assert fake.calls[0]["json"] == {
+        "id": 1,
+        "username": "x",
+        "group_oid": 2,
+        "subgroup": None,
+    }
+
+
+@pytest.mark.asyncio
+async def test_update_user_put_explicit_null_subgroup() -> None:
+    """PUT: явный ``null`` для subgroup отличается от отсутствия поля."""
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/user/5",
+                body_text=json.dumps(
+                    {
+                        "id": 5,
+                        "group_oid": 1,
+                        "subgroup": None,
+                        "username": "u",
+                        "created_at": "2020-01-01T00:00:00",
+                        "last_used_at": "2020-01-01T00:00:00",
+                    }
+                ),
+            )
+        ]
+    )
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        await client.users.update_user(5, UserUpdate(subgroup=None))
+    assert fake.calls[0]["method"] == "PUT"
+    assert fake.calls[0]["json"] == {"subgroup": None}
+
+
+@pytest.mark.asyncio
+async def test_update_user_omits_unset_fields() -> None:
+    """PUT: поля со значением UNSET не попадают в тело."""
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/user/5",
+                body_text=json.dumps(
+                    {
+                        "id": 5,
+                        "group_oid": 1,
+                        "subgroup": 2,
+                        "username": "u",
+                        "created_at": "2020-01-01T00:00:00",
+                        "last_used_at": "2020-01-01T00:00:00",
+                    }
+                ),
+            )
+        ]
+    )
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        await client.users.update_user(5, UserUpdate(subgroup=2))
+    assert fake.calls[0]["json"] == {"subgroup": 2}
 
 
 @pytest.mark.asyncio
