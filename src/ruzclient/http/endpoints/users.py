@@ -1,12 +1,23 @@
 from __future__ import annotations
 
-from dataclasses import asdict, dataclass
+from dataclasses import asdict, dataclass, fields
 from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
     from ...client import RuzClient
 
-__all__ = ["UserCreate", "UserRead", "UserUpdate", "UsersEndpoints"]
+__all__ = ["UNSET", "UserCreate", "UserRead", "UserUpdate", "UsersEndpoints"]
+
+
+class _UnsetType:
+    __slots__ = ()
+
+    def __repr__(self) -> str:
+        return "UNSET"
+
+
+UNSET = _UnsetType()
+"""Поле ``UserUpdate`` не передано в JSON (частичное обновление). ``None`` — явный JSON ``null``."""
 
 
 class UserRead(TypedDict):
@@ -14,28 +25,51 @@ class UserRead(TypedDict):
 
     id: int
     group_oid: int | None
-    subgroup: int
+    subgroup: int | None
     username: str
     created_at: str
     last_used_at: str
 
 
-def _payload_as_json_dict(payload: UserCreate | UserUpdate) -> dict[str, Any]:
-    """Собирает JSON-тело; опциональные поля с ``None`` не передаются."""
-    d = asdict(payload)
-    return {k: v for k, v in d.items() if v is not None}
+def _user_create_to_dict(c: UserCreate) -> dict[str, Any]:
+    """POST: ``subgroup`` передаётся всегда; ``null`` — пользователь без назначенной подгруппы."""
+    d = asdict(c)
+    out: dict[str, Any] = {}
+    for k, v in d.items():
+        if k == "subgroup":
+            out[k] = v
+            continue
+        if v is not None:
+            out[k] = v
+    return out
+
+
+def _user_update_to_dict(u: UserUpdate) -> dict[str, Any]:
+    """PUT: только заданные поля; ``None`` сериализуется в явный ``null`` (не путать с отсутствием ключа)."""
+    out: dict[str, Any] = {}
+    for f in fields(u):
+        v = getattr(u, f.name)
+        if v is UNSET:
+            continue
+        out[f.name] = v
+    return out
 
 
 @dataclass
 class UserUpdate:
-    """Тело ``PUT /api/user/{user_id}`` — частичное обновление пользователя."""
+    """
+    Тело ``PUT /api/user/{user_id}`` — частичное обновление.
 
-    username: str | None = None
-    group_oid: int | None = None
-    subgroup: int | None = None
-    group_guid: str | None = None
-    group_name: str | None = None
-    faculty_name: str | None = None
+    Поля по умолчанию ``UNSET``: не попадают в JSON. Значение ``None`` отправляется как ``null``
+    (например сброс ``subgroup``).
+    """
+
+    username: Any = UNSET
+    group_oid: Any = UNSET
+    subgroup: Any = UNSET
+    group_guid: Any = UNSET
+    group_name: Any = UNSET
+    faculty_name: Any = UNSET
 
 
 @dataclass
@@ -45,12 +79,14 @@ class UserCreate:
 
     При создании группы в БД сервер требует ``group_guid``, ``group_name``,
     ``faculty_name`` — передайте их, если группы с таким ``group_oid`` ещё нет.
+
+    ``subgroup=None`` сериализуется в JSON ``null`` — пользователь без подгруппы, пока не задана явно (0/1/2).
     """
 
     id: int
     username: str
     group_oid: int
-    subgroup: int = 0
+    subgroup: int | None = None
     group_guid: str | None = None
     group_name: str | None = None
     faculty_name: str | None = None
@@ -72,7 +108,7 @@ class UsersEndpoints:
         api_key: str | None = None,
     ) -> UserRead:
         """``POST /api/user/`` — создать пользователя."""
-        body = _payload_as_json_dict(payload)
+        body = _user_create_to_dict(payload)
         raw = await self._client.post(
             "api/user/",
             json=body,
@@ -90,7 +126,7 @@ class UsersEndpoints:
         api_key: str | None = None,
     ) -> UserRead:
         """``PUT /api/user/{user_id}`` — обновить пользователя."""
-        body = _payload_as_json_dict(payload)
+        body = _user_update_to_dict(payload)
         raw = await self._client.put(
             f"api/user/{user_id}",
             json=body,

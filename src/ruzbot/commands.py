@@ -154,10 +154,6 @@ async def _fetch_user(client, user_id: int):
         raise
 
 
-def _user_has_subgroup(u) -> bool:
-    return u is not None and u.get("subgroup", 0) != 0
-
-
 def _normalize_parse_day_delta(date_arg) -> int:
     """
     Смещение в днях от сегодня. Строка YYYY-MM-DD → дельта к сегодня (старые кнопки с датой).
@@ -287,8 +283,8 @@ async def setGroupCommand(bot, message, *, user_id: int):
 async def setSubGroupCommand(bot, message, *, user_id: int):
     logger.info(f"setSubGroupCommand called: user={user_id}")
     reply_message = (
-        "Введите номер подгруппы. Номером подгруппы должно быть одно число.\n"
-        "Если ваш номер подгруппы не является числом, то введите 0."
+        "Чтобы завершить регистрацию, введите одну цифру подгруппы: 0, 1 или 2.\n"
+        "Если номер не является числом, введите 0."
     )
     await bot.reply_to(message, reply_message)
 
@@ -298,7 +294,7 @@ async def sendProfileCommand(bot, message, *, user_id: int):
 
     async with ruz_client() as client:
         user = await _fetch_user(client, user_id)
-        if not user or not _user_has_subgroup(user):
+        if not user or not user.get("group_oid") or user.get("subgroup") is None:
             await backCommand(bot, message, user_id=user_id)
             return
 
@@ -339,7 +335,11 @@ async def sendProfileCommand(bot, message, *, user_id: int):
     logger.info(f"sendProfileCommand completed: user={user_id}")
 
 
-async def setGroup(bot, callback, group_oid: int, group_label: str) -> None:
+async def setGroup(bot, callback, group_oid: int, group_label: str) -> bool:
+    """
+    Новый пользователь: создаётся на сервере с ``subgroup=null``; подгруппа задаётся отдельным шагом.
+    Существующий: обновляем группу. Возвращает True, если нужно запросить подгруппу (первичная регистрация).
+    """
     user_id = callback.from_user.id
     logger.info(f"setGroup called: user_id={user_id}, group_oid={group_oid}, group_label={group_label!r}")
 
@@ -358,22 +358,23 @@ async def setGroup(bot, callback, group_oid: int, group_label: str) -> None:
                 id=user_id,
                 username=uname,
                 group_oid=group_oid,
-                subgroup=0,
-                group_guid=hit["guid"] if hit else None,
-                group_name=hit["name"] if hit else group_label,
-                faculty_name=(hit.get("faculty_name") if hit else None),
-            )
-            await client.users.create_user(payload)
-            logger.info(f"User {user_id} created with group_oid={group_oid}")
-        else:
-            upd = UserUpdate(
-                group_oid=group_oid,
+                subgroup=None,
                 group_guid=hit["guid"] if hit else None,
                 group_name=hit["name"] if hit else group_label,
                 faculty_name=hit.get("faculty_name") if hit else None,
             )
-            await client.users.update_user(user_id, upd)
-            logger.info(f"User {user_id} updated group_oid={group_oid}")
+            await client.users.create_user(payload)
+            logger.info(f"User {user_id} created with group_oid={group_oid}, subgroup=null")
+            return True
+        upd = UserUpdate(
+            group_oid=group_oid,
+            group_guid=hit["guid"] if hit else None,
+            group_name=hit["name"] if hit else group_label,
+            faculty_name=hit.get("faculty_name") if hit else None,
+        )
+        await client.users.update_user(user_id, upd)
+        logger.info(f"User {user_id} updated group_oid={group_oid}")
+        return False
 
 
 async def updateUserSubGroup(user_id: int, sub_group: int) -> None:
@@ -400,7 +401,18 @@ async def backCommand(bot, message, additional_message: str = "", *, user_id: in
     async with ruz_client() as client:
         user = await _fetch_user(client, user_id)
 
-    if user is None or not user.get("group_oid"):
+    if user is not None and user.get("group_oid") and user.get("subgroup") is not None:
+        pass
+    elif user is not None and user.get("group_oid") and user.get("subgroup") is None:
+        markup = quick_markup(
+            {"Выбрать другую группу": {"callback_data": "configureGroup"}},
+            row_width=1,
+        )
+        reply_message = (
+            "Привет, я бот для просмотра расписания МГТУ.\n"
+            "Группа выбрана — введите одну цифру подгруппы: 0, 1 или 2 (завершение регистрации).\n"
+        )
+    else:
         markup = quick_markup(
             {"Установить группу": {"callback_data": "configureGroup"}},
             row_width=1,
@@ -408,15 +420,6 @@ async def backCommand(bot, message, additional_message: str = "", *, user_id: in
         reply_message = (
             "Привет, я бот для просмотра расписания МГТУ. "
             "У тебя не установлена группа, друг.\n"
-        )
-    elif not _user_has_subgroup(user):
-        markup = quick_markup(
-            {"Установить подгруппу": {"callback_data": "configureSubGroup"}},
-            row_width=1,
-        )
-        reply_message = (
-            "Привет, я бот для просмотра расписания МГТУ. "
-            "У тебя не установлена подгруппа, друг.\n"
         )
 
     await bot.edit_message_text(
