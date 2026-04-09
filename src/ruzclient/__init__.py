@@ -1,12 +1,14 @@
 from .client import (
     ClientConfig,
     RuzClient,
+    LecturersEndpoints,
 )
 from .errors import RuzAuthError, RuzClientError, RuzHttpError
 from .http.endpoints import (
     GroupSearchHit,
     GroupsEndpoints,
     RuzGroupSearchItem,
+    Lecturer,
     ScheduleEndpoints,
     SearchEndpoints,
     UserCreate,
@@ -19,6 +21,7 @@ from .http.endpoints import (
 __all__ = [
     "ClientConfig",
     "RuzClient",
+    "Lecturer",
     "RuzClientError",
     "RuzAuthError",
     "RuzHttpError",

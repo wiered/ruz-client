@@ -46,6 +46,10 @@ def getRandomGroup() -> str:
     return random.choice(RANDOM_GROUP_NAMES)
 
 
+def remove_position(lecturer_short_name: str) -> str:
+    parts = lecturer_short_name.split()
+    return " ".join(parts[-2:]) if len(parts) >= 2 else lecturer_short_name
+
 @asynccontextmanager
 async def ruz_client():
     """Контекст с настроенным ``RuzClient`` (aiohttp)."""

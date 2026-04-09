@@ -11,6 +11,8 @@ from .http.endpoints.groups import GroupsEndpoints
 from .http.endpoints.schedule import ScheduleEndpoints
 from .http.endpoints.search import SearchEndpoints
 from .http.endpoints.users import UsersEndpoints
+from .http.endpoints.lecturers import LecturersEndpoints
+from .http.endpoints.disciplines import DisciplinesEndpoints
 from .http.transport import AsyncHttpTransport, TransportResponse
 
 
@@ -105,6 +107,13 @@ class RuzClient:
         self._schedule = ScheduleEndpoints(self)
         self._search = SearchEndpoints(self)
         self._users = UsersEndpoints(self)
+        self._lecturers = LecturersEndpoints(self)
+        self._disciplines = DisciplinesEndpoints(self)
+
+    @property
+    def disciplines(self) -> DisciplinesEndpoints:
+        """Эндпоинты дисциплин: ``list_disciplines``, ``get_discipline``."""
+        return self._disciplines
 
     @property
     def groups(self) -> GroupsEndpoints:
@@ -125,6 +134,16 @@ class RuzClient:
     def users(self) -> UsersEndpoints:
         """Эндпоинты пользователей: ``create_user``, ``get_by_id``, …"""
         return self._users
+
+    @property
+    def lecturers(self) -> LecturersEndpoints:
+        """Эндпоинты преподавателей: ``list_lecturers``, ``get_lecturer``."""
+        return self._lecturers
+
+    @property
+    def disciplines(self) -> DisciplinesEndpoints:
+        """Эндпоинты дисциплин: ``list_disciplines``, ``get_discipline``."""
+        return self._disciplines
 
     async def aclose(self) -> None:
         if self._own_transport:
