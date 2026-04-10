@@ -1,7 +1,7 @@
 # Repository Guidelines
 
 ## Project Structure & Module Organization
-This repository uses a `src/` layout. The reusable client lives in `src/ruzclient/`, with HTTP transports in `src/ruzclient/http/` and endpoint-specific modules under `src/ruzclient/http/endpoints/`. The Telegram bot code is in `src/ruzbot/`. Tests are under `tests/` and use fake transports and fixtures to avoid real network calls. CSV data files in the repo root are sample inputs, not generated build artifacts.
+This repository uses a `src/` layout. The reusable client lives in `src/ruzclient/`, with HTTP transports in `src/ruzclient/http/` and endpoint-specific modules under `src/ruzclient/http/endpoints/`. The Telegram bot code is in `src/ruzbot/`; bot-oriented env loading lives in `src/ruzbot/settings.py` (not in `ruzclient`). Tests are under `tests/` and use fake transports and fixtures to avoid real network calls. CSV data files in the repo root are sample inputs, not generated build artifacts.
 
 ## Build, Test, and Development Commands
 - `python -m pip install -e .[dev]` installs the package in editable mode with test dependencies.

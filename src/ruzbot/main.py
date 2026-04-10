@@ -6,7 +6,7 @@ import asyncio
 import logging
 import sys
 
-from ruzclient.settings import settings
+from ruzbot.settings import settings
 
 
 def main() -> None:

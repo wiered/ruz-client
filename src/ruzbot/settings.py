@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Settings:
     base_url: str = os.getenv("BASE_URL")
     timeout_s: float = 30.0

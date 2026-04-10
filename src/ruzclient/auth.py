@@ -1,10 +1,10 @@
 from __future__ import annotations
 
+import os
 from typing import Mapping, Optional
 
-from .settings import settings
-
 API_KEY_HEADER_NAME = "X-API-Key"
+_TOKEN_ENV_VAR = "TOKEN"
 
 
 def get_api_key(explicit_token: Optional[str] = None) -> Optional[str]:
@@ -13,13 +13,12 @@ def get_api_key(explicit_token: Optional[str] = None) -> Optional[str]:
 
     Приоритет:
     1) явно переданный `explicit_token`
-    2) `settings.token` из переменных окружения
+    2) переменная окружения ``TOKEN`` (fallback для скриптов/CLI)
     """
 
     if explicit_token:
         return explicit_token
-    # В settings.py поле называется `token`
-    return getattr(settings, "token", None)
+    return os.getenv(_TOKEN_ENV_VAR)
 
 
 def build_auth_headers(*, token: Optional[str] = None) -> dict[str, str]:

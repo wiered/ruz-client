@@ -12,7 +12,7 @@ from ruzbot import markups
 from ruzbot.utils import ruz_client
 
 from ruzclient.errors import RuzHttpError
-from ruzclient.settings import settings
+from ruzbot.settings import settings
 
 __version__ = "28.03.26"
 

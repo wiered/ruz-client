@@ -4,7 +4,7 @@ import random
 from contextlib import asynccontextmanager
 
 from ruzclient.client import ClientConfig, RuzClient
-from ruzclient.settings import settings
+from ruzbot.settings import settings
 
 RANDOM_GROUP_NAMES = [
     'ИС222',
