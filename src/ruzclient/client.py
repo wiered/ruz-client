@@ -140,11 +140,6 @@ class RuzClient:
         """Эндпоинты преподавателей: ``list_lecturers``, ``get_lecturer``."""
         return self._lecturers
 
-    @property
-    def disciplines(self) -> DisciplinesEndpoints:
-        """Эндпоинты дисциплин: ``list_disciplines``, ``get_discipline``."""
-        return self._disciplines
-
     async def aclose(self) -> None:
         if self._own_transport:
             await self._transport.aclose()
