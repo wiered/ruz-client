@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import os
 import sys
 from typing import Any, Optional
 
@@ -10,7 +11,12 @@ from ruzclient.http import HttpxTransport
 
 from .client import ClientConfig, RuzClient
 from .errors import RuzClientError
-from .settings import settings
+
+_DEFAULT_TIMEOUT_S = 30.0
+_DEFAULT_HEADERS: dict[str, str] = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+}
 
 
 def _print_response(resp: Any) -> None:
@@ -24,13 +30,13 @@ def build_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(prog="python -m ruzclient")
     parser.add_argument(
         "--base-url",
-        default=settings.base_url,
+        default=os.getenv("BASE_URL"),
         help="Базовый URL сервера без суффикса /api (например, http://localhost:8000).",
     )
     parser.add_argument(
         "--timeout-s",
         type=float,
-        default=settings.timeout_s,
+        default=_DEFAULT_TIMEOUT_S,
         help="Таймаут запросов в секундах.",
     )
     parser.add_argument(
@@ -58,7 +64,7 @@ async def run_command(*, base_url: str, timeout_s: float, api_key: Optional[str]
             base_url=base_url,
             timeout_s=timeout_s,
             api_key=api_key,
-            default_headers=settings.default_headers,
+            default_headers=_DEFAULT_HEADERS,
         ),
         transport=transport,
     )
@@ -115,4 +121,11 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 
 if __name__ == "__main__":
+    run = input("Run? This will load .env file (y/n): ")
+    if run.lower() != "y":
+        raise SystemExit(1)
+
+    from dotenv import load_dotenv
+    load_dotenv()
+
     raise SystemExit(main())
