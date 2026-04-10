@@ -7,14 +7,10 @@ import os
 import sys
 from typing import Any, Optional
 
-from dotenv import load_dotenv
-
 from ruzclient.http import HttpxTransport
 
 from .client import ClientConfig, RuzClient
 from .errors import RuzClientError
-
-load_dotenv()
 
 _DEFAULT_TIMEOUT_S = 30.0
 _DEFAULT_HEADERS: dict[str, str] = {
@@ -125,4 +121,11 @@ def main(argv: Optional[list[str]] = None) -> int:
 
 
 if __name__ == "__main__":
+    run = input("Run? This will load .env file (y/n): ")
+    if run.lower() != "y":
+        raise SystemExit(1)
+
+    from dotenv import load_dotenv
+    load_dotenv()
+
     raise SystemExit(main())
