@@ -5,7 +5,10 @@ from .client import (
 )
 from .errors import RuzAuthError, RuzClientError, RuzHttpError
 from .http.endpoints import (
+    GroupCreate,
+    GroupRead,
     GroupSearchHit,
+    GroupUpdate,
     GroupsEndpoints,
     RuzGroupSearchItem,
     Lecturer,
@@ -26,7 +29,10 @@ __all__ = [
     "RuzClientError",
     "RuzAuthError",
     "RuzHttpError",
+    "GroupCreate",
+    "GroupRead",
     "GroupSearchHit",
+    "GroupUpdate",
     "GroupsEndpoints",
     "RuzGroupSearchItem",
     "ScheduleEndpoints",

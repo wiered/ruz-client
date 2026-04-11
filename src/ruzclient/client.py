@@ -117,7 +117,7 @@ class RuzClient:
 
     @property
     def groups(self) -> GroupsEndpoints:
-        """Эндпоинты групп, например ``await client.groups.search_groups_by_name("ИС22")``."""
+        """Эндпоинты групп: поиск, ``create_group``, ``list_groups``, ``get_group``, …"""
         return self._groups
 
     @property
