@@ -4,10 +4,10 @@ import json
 from datetime import date
 
 import pytest
+from tests.fake_transport import FakeTransport
 
 from ruzclient.client import ClientConfig, RuzClient
 from ruzclient.http.transport import TransportResponse
-from tests.fake_transport import FakeTransport
 
 BASE = "http://127.0.0.1:2201"
 
