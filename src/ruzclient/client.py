@@ -16,7 +16,9 @@ from .http.endpoints.disciplines import DisciplinesEndpoints
 from .http.transport import AsyncHttpTransport, TransportResponse
 
 
-def _normalize_base_url(base_url: str, *, default_scheme: str = "http", default_port: int = 2201) -> str:
+def _normalize_base_url(
+    base_url: str, *, default_scheme: str = "http", default_port: int = 2201
+) -> str:
     """
     Приводит `base_url` к виду `http[s]://host[:port][/path]`.
 
@@ -177,7 +179,11 @@ class RuzClient:
             effective_api_key = (
                 self._config.api_key
                 if self._config.api_key is not None
-                else (self._config.bearer_token if self._config.bearer_token is not None else None)
+                else (
+                    self._config.bearer_token
+                    if self._config.bearer_token is not None
+                    else None
+                )
             )
         if effective_api_key is None:
             effective_api_key = get_api_key()
@@ -337,7 +343,9 @@ class RuzClient:
             timeout_s=timeout_s,
         )
 
-    async def public(self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None) -> Any:
+    async def public(
+        self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None
+    ) -> Any:
         """
         GET `/public`.
 

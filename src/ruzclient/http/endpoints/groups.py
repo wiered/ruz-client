@@ -105,7 +105,9 @@ class GroupsEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from group search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from group search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
 
     async def create_group(
@@ -203,7 +205,9 @@ class GroupsEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, bool):
-            raise TypeError(f"expected bool from group update, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected bool from group update, got {type(raw).__name__}"
+            )
         return raw
 
     async def delete_group(
@@ -220,5 +224,7 @@ class GroupsEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, bool):
-            raise TypeError(f"expected bool from group delete, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected bool from group delete, got {type(raw).__name__}"
+            )
         return raw

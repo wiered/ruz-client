@@ -64,7 +64,9 @@ class ScheduleEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from user schedule day, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from user schedule day, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
 
     async def get_user_week(
@@ -87,5 +89,7 @@ class ScheduleEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from user schedule week, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from user schedule week, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]

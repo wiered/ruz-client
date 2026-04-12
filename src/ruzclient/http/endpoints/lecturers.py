@@ -49,7 +49,9 @@ class LecturersEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from lecturer list, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from lecturer list, got {type(raw).__name__}"
+            )
         out: list[Lecturer] = []
         for i, item in enumerate(raw):
             try:

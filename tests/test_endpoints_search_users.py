@@ -197,7 +197,9 @@ async def test_create_user_omits_none_optional_fields() -> None:
                 status_code=201,
                 headers={"Content-Type": "application/json"},
                 url=f"{BASE}/api/user/",
-                body_text=json.dumps({"id": 1, "username": "x", "group_oid": 2, "subgroup": 1}),
+                body_text=json.dumps(
+                    {"id": 1, "username": "x", "group_oid": 2, "subgroup": 1}
+                ),
             )
         ]
     )

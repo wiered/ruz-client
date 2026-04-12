@@ -68,7 +68,9 @@ class SearchEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from lecturer day search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from lecturer day search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
 
     async def lecturer_week(
@@ -98,7 +100,9 @@ class SearchEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from lecturer week search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from lecturer week search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
 
     async def discipline_day(
@@ -128,7 +132,9 @@ class SearchEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from discipline day search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from discipline day search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
 
     async def discipline_week(
@@ -158,5 +164,7 @@ class SearchEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from discipline week search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from discipline week search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
