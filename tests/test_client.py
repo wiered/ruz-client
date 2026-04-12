@@ -1,8 +1,11 @@
 from __future__ import annotations
 
+import asyncio
+import json
 from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
+from aioresponses import aioresponses
 
 from ruzclient.client import (
     ClientConfig,
@@ -167,6 +170,94 @@ async def test_aclose_skips_when_transport_not_owned() -> None:
     client = _make_client(fake)
     await client.aclose()
     assert client._own_transport is False
+
+
+@pytest.mark.asyncio
+async def test_sequential_requests_reuse_fake_transport(no_token: None) -> None:
+    """Несколько GET подряд: один клиент / один FakeTransport, ответы из очереди."""
+    n = 5
+    canned = [
+        TransportResponse(
+            status_code=200,
+            headers={"Content-Type": "application/json"},
+            url=f"{BASE}/healthz",
+            body_text=json.dumps({"i": i}),
+        )
+        for i in range(n)
+    ]
+    fake = FakeTransport(canned)
+    async with _make_client(fake) as client:
+        for i in range(n):
+            out = await client.healthz()
+            assert out == {"i": i}
+    assert len(fake.calls) == n
+    assert all(c["method"] == "GET" for c in fake.calls)
+
+
+@pytest.mark.asyncio
+async def test_ruz_client_sequential_requests_owned_session(no_token: None) -> None:
+    """Повторное использование встроенного aiohttp-сессии: несколько запросов подряд."""
+    url = f"{BASE}/public"
+    with aioresponses() as m:
+        m.get(
+            url,
+            body=json.dumps({"ok": True}),
+            status=200,
+            headers={"Content-Type": "application/json"},
+            repeat=True,
+        )
+        client = RuzClient(ClientConfig(base_url=BASE))
+        try:
+            for _ in range(4):
+                assert await client.public() == {"ok": True}
+        finally:
+            await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_ruz_client_concurrent_requests_owned_session(no_token: None) -> None:
+    """Параллельные запросы через один клиент (reuse сессии под asyncio.gather)."""
+    url = f"{BASE}/public"
+    with aioresponses() as m:
+        m.get(
+            url,
+            body=json.dumps({"ok": True}),
+            status=200,
+            headers={"Content-Type": "application/json"},
+            repeat=True,
+        )
+        client = RuzClient(ClientConfig(base_url=BASE))
+        try:
+            results = await asyncio.gather(*(client.public() for _ in range(6)))
+        finally:
+            await client.aclose()
+    assert results == [{"ok": True}] * 6
+
+
+@pytest.mark.asyncio
+async def test_ruz_client_aclose_twice_owned_does_not_raise(no_token: None) -> None:
+    """Повторный `aclose()` не должен падать (как у `aiohttp.ClientSession.close()`)."""
+    url = f"{BASE}/public"
+    with aioresponses() as m:
+        m.get(
+            url,
+            body="{}",
+            status=200,
+            headers={"Content-Type": "application/json"},
+        )
+        client = RuzClient(ClientConfig(base_url=BASE))
+        await client.public()
+        await client.aclose()
+        await client.aclose()
+
+
+@pytest.mark.asyncio
+async def test_ruz_client_request_after_aclose_raises(no_token: None) -> None:
+    """После `aclose()` сессия aiohttp закрыта — новый запрос даёт RuntimeError."""
+    client = RuzClient(ClientConfig(base_url=BASE))
+    await client.aclose()
+    with pytest.raises(RuntimeError, match="Session is closed"):
+        await client.public()
 
 
 # --- _normalize_path ---
