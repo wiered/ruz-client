@@ -13,7 +13,7 @@ from ruzclient.client import (
     _content_type_lower,
     _normalize_base_url,
 )
-from ruzclient.errors import RuzHttpError
+from ruzclient.errors import RuzClientError, RuzHttpError
 from ruzclient.http.endpoints.disciplines import DisciplinesEndpoints
 from ruzclient.http.endpoints.groups import GroupsEndpoints
 from ruzclient.http.endpoints.lecturers import LecturersEndpoints
@@ -236,6 +236,51 @@ async def test_sequential_requests_reuse_fake_transport(no_token: None) -> None:
             assert out == {"i": i}
     assert len(fake.calls) == n
     assert all(c["method"] == "GET" for c in fake.calls)
+
+
+@pytest.mark.asyncio
+async def test_transport_ruz_client_error_preserves_exception_chain_through_endpoint(
+    no_token: None,
+) -> None:
+    """
+    `request()` и высокоуровневые методы не оборачивают
+        ошибку transport — `__cause__` на месте.
+    """
+
+    class _Transport:
+        async def send(self, *args: object, **kwargs: object) -> TransportResponse:
+            raise RuzClientError("Network error: simulated") from OSError(
+                42, "simulated"
+            )
+
+        async def aclose(self) -> None:
+            pass
+
+    cfg = ClientConfig(base_url=BASE)
+    async with RuzClient(cfg, transport=_Transport()) as client:
+        with pytest.raises(RuzClientError) as ei:
+            await client.public()
+    assert isinstance(ei.value.__cause__, OSError)
+
+
+@pytest.mark.asyncio
+async def test_transport_error_not_swallowed_by_ruz_http_error_handler(
+    no_token: None,
+) -> None:
+    """`except RuzHttpError` в endpoint не перехватывает сетевую `RuzClientError`."""
+
+    class _Transport:
+        async def send(self, *args: object, **kwargs: object) -> TransportResponse:
+            raise RuzClientError("Network error: simulated") from ConnectionError("x")
+
+        async def aclose(self) -> None:
+            pass
+
+    cfg = ClientConfig(base_url=BASE)
+    async with RuzClient(cfg, transport=_Transport()) as client:
+        with pytest.raises(RuzClientError) as ei:
+            await client.groups.get_group(1)
+    assert isinstance(ei.value.__cause__, ConnectionError)
 
 
 @pytest.mark.asyncio
