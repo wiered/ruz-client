@@ -31,6 +31,14 @@ def _make_client(fake: FakeTransport, **kwargs: object) -> RuzClient:
     return RuzClient(cfg, transport=fake)
 
 
+def _url_after_normalize_path(base_url: str, path: str) -> str:
+    """Итоговый URL: нормализация `base_url` в `ClientConfig` + `_normalize_path`."""
+    return RuzClient(
+        ClientConfig(base_url=base_url),
+        transport=FakeTransport([]),
+    )._normalize_path(path)
+
+
 # --- _normalize_base_url ---
 
 
@@ -59,6 +67,42 @@ def test_normalize_base_url_https_unchanged() -> None:
 
 def test_normalize_base_url_strips_trailing_api_suffix() -> None:
     assert _normalize_base_url("http://127.0.0.1:2201/api") == "http://127.0.0.1:2201"
+
+
+@pytest.mark.parametrize(
+    ("raw", "normalized"),
+    [
+        ("127.0.0.1", "http://127.0.0.1:2201"),
+        ("http://127.0.0.1:2201", "http://127.0.0.1:2201"),
+        ("http://127.0.0.1:2201/", "http://127.0.0.1:2201"),
+        ("http://127.0.0.1:2201/api", "http://127.0.0.1:2201"),
+        ("http://127.0.0.1:2201/api/", "http://127.0.0.1:2201"),
+        (
+            "http://127.0.0.1:2201/api/v1",
+            "http://127.0.0.1:2201/api/v1",
+        ),
+        (
+            "http://127.0.0.1:2201/api/v1/",
+            "http://127.0.0.1:2201/api/v1",
+        ),
+        ("127.0.0.1/api", "http://127.0.0.1:2201"),
+        ("127.0.0.1/api/", "http://127.0.0.1:2201"),
+        ("127.0.0.1/api/v1", "http://127.0.0.1:2201/api/v1"),
+        ("127.0.0.1/api/v1/", "http://127.0.0.1:2201/api/v1"),
+        # Суффикс `/api` срезается только если URL целиком …/api (не …/api/v1).
+        ("http://host.only/api", "http://host.only"),
+        ("http://host.only/api/", "http://host.only"),
+        # Двойной слэш в scheme-полном URL: хост `h`, путь `//api` → …/api → срез.
+        ("http://h//api", "http://h/"),
+        # Без схемы: двойной слэш остаётся в пути.
+        ("127.0.0.1//seg", "http://127.0.0.1:2201//seg"),
+        # Как hostname без схемы (редко; фиксируем фактическое поведение).
+        ("api", "http://api:2201"),
+        ("/api/", "http://:2201"),
+    ],
+)
+def test_normalize_base_url_table(raw: str, normalized: str) -> None:
+    assert _normalize_base_url(raw) == normalized
 
 
 # --- _content_type_lower ---
@@ -261,6 +305,63 @@ async def test_ruz_client_request_after_aclose_raises(no_token: None) -> None:
 
 
 # --- _normalize_path ---
+
+
+@pytest.mark.parametrize(
+    ("base_url", "path", "expected_url"),
+    [
+        ("http://127.0.0.1:2201", "", "http://127.0.0.1:2201"),
+        ("http://127.0.0.1:2201", "/", "http://127.0.0.1:2201"),
+        ("http://127.0.0.1:2201", "public", "http://127.0.0.1:2201/public"),
+        ("http://127.0.0.1:2201", "api", "http://127.0.0.1:2201/api"),
+        ("http://127.0.0.1:2201", "/api", "http://127.0.0.1:2201/api"),
+        ("http://127.0.0.1:2201", "api/", "http://127.0.0.1:2201/api/"),
+        ("http://127.0.0.1:2201", "/api/", "http://127.0.0.1:2201/api/"),
+        (
+            "http://127.0.0.1:2201/api/v1/",
+            "users",
+            "http://127.0.0.1:2201/api/v1/users",
+        ),
+        (
+            "http://127.0.0.1:2201",
+            "x?a=1",
+            "http://127.0.0.1:2201/x?a=1",
+        ),
+        (
+            "http://127.0.0.1:2201",
+            "search?q=a&limit=2",
+            "http://127.0.0.1:2201/search?q=a&limit=2",
+        ),
+        # Ведущие `/` снимаются целиком; внутренние `//` не схлопываются.
+        (
+            "http://127.0.0.1:2201",
+            "//api//x",
+            "http://127.0.0.1:2201/api//x",
+        ),
+        (
+            "http://127.0.0.1:2201",
+            "http://other.example/z",
+            "http://other.example/z",
+        ),
+        (
+            "http://127.0.0.1:2201",
+            "https://secure.example/z",
+            "https://secure.example/z",
+        ),
+        (
+            "127.0.0.1/api",
+            "v1/r",
+            "http://127.0.0.1:2201/v1/r",
+        ),
+        (
+            "127.0.0.1//x",
+            "y",
+            "http://127.0.0.1:2201//x/y",
+        ),
+    ],
+)
+def test_normalize_path_table(base_url: str, path: str, expected_url: str) -> None:
+    assert _url_after_normalize_path(base_url, path) == expected_url
 
 
 @pytest.mark.asyncio
