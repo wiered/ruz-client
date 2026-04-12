@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 
 class RuzClientError(Exception):
     """Базовая ошибка клиента."""
@@ -19,9 +17,9 @@ class RuzHttpError(RuzClientError):
         *,
         status_code: int,
         message: str,
-        method: Optional[str] = None,
-        url: Optional[str] = None,
-        response_text: Optional[str] = None,
+        method: str | None = None,
+        url: str | None = None,
+        response_text: str | None = None,
     ) -> None:
         self.status_code = status_code
         self.method = method

@@ -65,7 +65,6 @@ class LecturersEndpoints:
             response = await self._client.get(f"api/lecturer/{lecturer_id}")
         except RuzHttpError as e:
             if e.status_code == 404:
-                raise ValueError(f"Lecturer with id {lecturer_id} not found")
+                raise ValueError(f"Lecturer with id {lecturer_id} not found") from e
             raise
-
         return _parse_lecturer(response)

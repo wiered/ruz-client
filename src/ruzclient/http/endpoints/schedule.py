@@ -41,7 +41,7 @@ class ScheduleEndpoints:
 
     __slots__ = ("_client",)
 
-    def __init__(self, client: "RuzClient") -> None:
+    def __init__(self, client: RuzClient) -> None:
         self._client = client
 
     async def get_user_day(

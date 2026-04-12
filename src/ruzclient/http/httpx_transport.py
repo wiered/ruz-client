@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import asyncio
-from typing import Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 from ..errors import RuzClientError
 from .transport import TransportResponse
@@ -14,14 +14,14 @@ class HttpxTransport:
         self,
         *,
         timeout_s: float = 30.0,
-        client: Optional[Any] = None,
+        client: Any | None = None,
     ) -> None:
         try:
             import httpx  # type: ignore
         except ImportError as e:  # pragma: no cover
             raise ImportError(
-                "httpx is required for HttpxTransport. Install with `pip install httpx` "
-                "or `pip install ruz-client[httpx]`."
+                "httpx is required for HttpxTransport. Install with `pip install httpx`"
+                " or `pip install ruz-client[httpx]`."
             ) from e
 
         self._httpx = httpx
@@ -36,10 +36,10 @@ class HttpxTransport:
         method: str,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: Mapping[str, str] | None = None,
         timeout_s: float = 30.0,
     ) -> TransportResponse:
         try:
@@ -54,7 +54,7 @@ class HttpxTransport:
             )
         except self._httpx.HTTPError as e:
             raise RuzClientError(f"Network error: {e}") from e
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             raise RuzClientError(f"Network error: {e}") from e
 
         body_text = r.text

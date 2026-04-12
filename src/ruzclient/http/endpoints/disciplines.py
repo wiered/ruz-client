@@ -45,7 +45,7 @@ def _parse_discipline(response: object) -> "Discipline":
 
 
 class Discipline(TypedDict):
-    """Item returned by ``GET /api/discipline/`` and ``GET /api/discipline/{discipline_id}``."""
+    """Item returned by GET /api/discipline/ and GET /api/discipline/{discipline_id}."""
 
     id: int
     name: str
@@ -71,7 +71,8 @@ class DisciplinesEndpoints:
         Returns a list of all disciplines.
 
         Raises:
-            TypeError: If the response is not a JSON array or an item has the wrong shape.
+            TypeError: If the response is not a JSON array
+                or an item has the wrong shape.
             KeyError: If a list item is missing a required field.
             RuzHttpError: On HTTP error from the server.
         """
@@ -111,7 +112,8 @@ class DisciplinesEndpoints:
             Discipline: The found discipline.
 
         Raises:
-            ValueError: If ``discipline_id`` is not a positive integer, or the discipline does not exist (404).
+            ValueError: If discipline_id is not a positive integer,
+                or the discipline does not exist (HTTP 404).
             TypeError: If the response body is not a discipline-shaped object.
             KeyError: If a required field is missing from the response.
             RuzHttpError: On other HTTP errors.

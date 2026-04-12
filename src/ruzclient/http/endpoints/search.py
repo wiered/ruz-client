@@ -29,7 +29,7 @@ def search_group_filters(
     group_id: int | None = None,
     sub_group: int | None = None,
 ) -> dict[str, int]:
-    """Дополнительные query-параметры ``group_id`` / ``sub_group`` для ``GET .../api/search/...``."""
+    """Дополнительные query-параметры group_id / sub_group для GET .../api/search/..."""
     return _optional_filters(group_id=group_id, sub_group=sub_group)
 
 
@@ -38,7 +38,7 @@ class SearchEndpoints:
 
     __slots__ = ("_client",)
 
-    def __init__(self, client: "RuzClient") -> None:
+    def __init__(self, client: RuzClient) -> None:
         self._client = client
 
     async def lecturer_day(

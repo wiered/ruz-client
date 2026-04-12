@@ -78,7 +78,7 @@ class GroupsEndpoints:
 
     __slots__ = ("_client",)
 
-    def __init__(self, client: "RuzClient") -> None:
+    def __init__(self, client: RuzClient) -> None:
         self._client = client
 
     async def search_groups_by_name(
