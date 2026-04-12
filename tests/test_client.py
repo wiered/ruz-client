@@ -494,6 +494,32 @@ async def test_default_headers_and_per_request_headers_merge(
 
 
 @pytest.mark.asyncio
+async def test_build_headers_does_not_mutate_default_or_request_headers(
+    no_token: None,
+) -> None:
+    """`_build_headers` копирует default/request headers; исходные dict не меняет."""
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/public",
+                body_text="{}",
+            )
+        ]
+    )
+    default_h = {"X-A": "1", "X-B": "def"}
+    req_h = {"X-B": "req", "X-C": "3"}
+    default_snap = dict(default_h)
+    req_snap = dict(req_h)
+    cfg = ClientConfig(base_url=BASE, default_headers=default_h)
+    async with RuzClient(cfg, transport=fake) as client:
+        await client.get("public", headers=req_h)
+    assert default_h == default_snap
+    assert req_h == req_snap
+
+
+@pytest.mark.asyncio
 async def test_bearer_fallback_authorization_when_explicit_api_key_empty(
     no_token: None,
 ) -> None:

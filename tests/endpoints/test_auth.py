@@ -87,3 +87,20 @@ def test_merge_auth_headers_lowercase_api_key_not_deduped() -> None:
     merged = merge_auth_headers({"x-api-key": "lower"}, token="upper")
     assert merged["x-api-key"] == "lower"
     assert merged[API_KEY_HEADER_NAME] == "upper"
+
+
+def test_merge_auth_headers_does_not_mutate_input_dict(env_api_key: str) -> None:
+    """Входной dict не должен меняться (merge строит новый)."""
+    before = {"Accept": "application/json", "User-Agent": "t"}
+    snapshot = dict(before)
+    merge_auth_headers(before, token=None)
+    assert before == snapshot
+    merge_auth_headers(before, token="extra")
+    assert before == snapshot
+
+
+def test_merge_auth_headers_does_not_mutate_when_api_key_present() -> None:
+    before = {API_KEY_HEADER_NAME: "mine", "X-Other": "1"}
+    snapshot = dict(before)
+    merge_auth_headers(before, token="would-not-replace")
+    assert before == snapshot
