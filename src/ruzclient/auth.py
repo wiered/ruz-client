@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import os
-from typing import Mapping, Optional
+from collections.abc import Mapping
 
 API_KEY_HEADER_NAME = "X-API-Key"
 _TOKEN_ENV_VAR = "TOKEN"
 
 
-def get_api_key(explicit_token: Optional[str] = None) -> Optional[str]:
+def get_api_key(explicit_token: str | None = None) -> str | None:
     """
     Возвращает токен для заголовка `X-API-Key`.
 
@@ -21,7 +21,7 @@ def get_api_key(explicit_token: Optional[str] = None) -> Optional[str]:
     return os.getenv(_TOKEN_ENV_VAR)
 
 
-def build_auth_headers(*, token: Optional[str] = None) -> dict[str, str]:
+def build_auth_headers(*, token: str | None = None) -> dict[str, str]:
     """Строит заголовки аутентификации (только X-API-Key при наличии токена)."""
 
     api_key = get_api_key(token)
@@ -29,7 +29,7 @@ def build_auth_headers(*, token: Optional[str] = None) -> dict[str, str]:
 
 
 def merge_auth_headers(
-    headers: Optional[Mapping[str, str]] = None, *, token: Optional[str] = None
+    headers: Mapping[str, str] | None = None, *, token: str | None = None
 ) -> dict[str, str]:
     """
     Мёржит переданные заголовки с аутентификацией.

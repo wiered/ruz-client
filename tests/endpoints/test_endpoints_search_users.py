@@ -3,11 +3,11 @@ from __future__ import annotations
 import json
 
 import pytest
+from tests.fake_transport import FakeTransport
 
 from ruzclient.client import ClientConfig, RuzClient
 from ruzclient.http.endpoints import UserCreate, UserUpdate
 from ruzclient.http.transport import TransportResponse
-from tests.fake_transport import FakeTransport
 
 BASE = "http://127.0.0.1:2201"
 
@@ -197,7 +197,9 @@ async def test_create_user_omits_none_optional_fields() -> None:
                 status_code=201,
                 headers={"Content-Type": "application/json"},
                 url=f"{BASE}/api/user/",
-                body_text=json.dumps({"id": 1, "username": "x", "group_oid": 2, "subgroup": 1}),
+                body_text=json.dumps(
+                    {"id": 1, "username": "x", "group_oid": 2, "subgroup": 1}
+                ),
             )
         ]
     )

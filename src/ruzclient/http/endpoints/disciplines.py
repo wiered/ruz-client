@@ -32,19 +32,26 @@ def _parse_discipline(response: object) -> "Discipline":
         raise TypeError(f"discipline name must be str, got {type(name).__name__}")
     examtype = response["examtype"]
     if not isinstance(examtype, str):
-        raise TypeError(f"discipline examtype must be str, got {type(examtype).__name__}")
+        raise TypeError(
+            f"discipline examtype must be str, got {type(examtype).__name__}"
+        )
     has_labs = response["has_labs"]
     if not isinstance(has_labs, bool):
-        raise TypeError(f"discipline has_labs must be bool, got {type(has_labs).__name__}")
+        raise TypeError(
+            f"discipline has_labs must be bool, got {type(has_labs).__name__}"
+        )
 
     return response  # type: ignore[return-value]
 
+
 class Discipline(TypedDict):
-    """Item returned by ``GET /api/discipline/`` and ``GET /api/discipline/{discipline_id}``."""
+    """Item returned by GET /api/discipline/ and GET /api/discipline/{discipline_id}."""
+
     id: int
     name: str
     examtype: str
     has_labs: bool
+
 
 class DisciplinesEndpoints:
     __slots__ = ("_client",)
@@ -64,7 +71,8 @@ class DisciplinesEndpoints:
         Returns a list of all disciplines.
 
         Raises:
-            TypeError: If the response is not a JSON array or an item has the wrong shape.
+            TypeError: If the response is not a JSON array
+                or an item has the wrong shape.
             KeyError: If a list item is missing a required field.
             RuzHttpError: On HTTP error from the server.
         """
@@ -74,7 +82,9 @@ class DisciplinesEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from discipline list, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from discipline list, got {type(raw).__name__}"
+            )
         out: list[Discipline] = []
         for i, item in enumerate(raw):
             try:
@@ -102,7 +112,8 @@ class DisciplinesEndpoints:
             Discipline: The found discipline.
 
         Raises:
-            ValueError: If ``discipline_id`` is not a positive integer, or the discipline does not exist (404).
+            ValueError: If discipline_id is not a positive integer,
+                or the discipline does not exist (HTTP 404).
             TypeError: If the response body is not a discipline-shaped object.
             KeyError: If a required field is missing from the response.
             RuzHttpError: On other HTTP errors.

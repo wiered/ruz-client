@@ -4,10 +4,10 @@ import json
 from datetime import date
 
 import pytest
+from tests.fake_transport import FakeTransport
 
 from ruzclient.client import ClientConfig, RuzClient
 from ruzclient.http.transport import TransportResponse
-from tests.fake_transport import FakeTransport
 
 BASE = "http://127.0.0.1:2201"
 
@@ -20,8 +20,6 @@ _LESSON = {
     "discipline_name": "Математика",
     "kind_of_work": "Лекция",
     "lecturer_short_name": "Иванов",
-    "lecturer_id": 10,
-    "discipline_id": 20,
     "auditorium_name": "101",
     "building": "ГЗ",
     "group_id": 1,
@@ -29,99 +27,96 @@ _LESSON = {
 
 
 @pytest.mark.asyncio
-async def test_get_user_day_builds_path_and_params_from_date() -> None:
+async def test_lecturer_day_path_and_params() -> None:
     fake = FakeTransport(
         [
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/api/schedule/user/42/day",
+                url=f"{BASE}/api/search/lecturer/day",
                 body_text=json.dumps([_LESSON]),
             )
         ]
     )
     async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
-        out = await client.schedule.get_user_day(42, date(2026, 3, 26))
+        out = await client.search.lecturer_day(5, date(2026, 3, 26))
     assert fake.calls[0]["method"] == "GET"
-    assert fake.calls[0]["url"].rstrip("/").endswith("/api/schedule/user/42/day")
-    assert fake.calls[0]["params"] == {"date": "2026-03-26"}
+    assert fake.calls[0]["url"].rstrip("/").endswith("/api/search/lecturer/day")
+    assert fake.calls[0]["params"] == {"lecturer_id": 5, "date": "2026-03-26"}
     assert out == [_LESSON]
 
 
 @pytest.mark.asyncio
-async def test_get_user_day_accepts_date_string() -> None:
+async def test_lecturer_week_with_optional_filters() -> None:
     fake = FakeTransport(
         [
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/api/schedule/user/7/day",
+                url=f"{BASE}/api/search/lecturer/week",
                 body_text="[]",
             )
         ]
     )
     async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
-        await client.schedule.get_user_day(7, "  2026-01-15  ")
-    assert fake.calls[0]["params"] == {"date": "2026-01-15"}
+        await client.search.lecturer_week(2, "2026-03-24", group_id=10, sub_group=1)
+    assert fake.calls[0]["params"] == {
+        "lecturer_id": 2,
+        "date": "2026-03-24",
+        "group_id": 10,
+        "sub_group": 1,
+    }
 
 
 @pytest.mark.asyncio
-async def test_get_user_week_builds_path_and_params() -> None:
+async def test_discipline_day_path_and_params() -> None:
     fake = FakeTransport(
         [
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/api/schedule/user/99/week",
+                url=f"{BASE}/api/search/discipline/day",
                 body_text=json.dumps([_LESSON]),
             )
         ]
     )
     async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
-        out = await client.schedule.get_user_week(99, date(2026, 3, 24))
-    assert fake.calls[0]["method"] == "GET"
-    assert fake.calls[0]["url"].rstrip("/").endswith("/api/schedule/user/99/week")
-    assert fake.calls[0]["params"] == {"date": "2026-03-24"}
+        out = await client.search.discipline_day(99, date(2026, 3, 26))
+    assert fake.calls[0]["url"].rstrip("/").endswith("/api/search/discipline/day")
+    assert fake.calls[0]["params"] == {"discipline_id": 99, "date": "2026-03-26"}
     assert out == [_LESSON]
 
 
 @pytest.mark.asyncio
-async def test_get_user_day_empty_schedule_date_raises() -> None:
-    fake = FakeTransport([])
-    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
-        with pytest.raises(ValueError, match="empty"):
-            await client.schedule.get_user_day(1, "   ")
-
-
-@pytest.mark.asyncio
-async def test_get_user_day_non_list_response_raises() -> None:
+async def test_discipline_week_path_and_params() -> None:
     fake = FakeTransport(
         [
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/api/schedule/user/1/day",
-                body_text=json.dumps({"detail": "oops"}),
+                url=f"{BASE}/api/search/discipline/week",
+                body_text="[]",
             )
         ]
     )
     async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
-        with pytest.raises(TypeError, match="expected list"):
-            await client.schedule.get_user_day(1, "2026-03-26")
+        await client.search.discipline_week(7, date(2026, 3, 24))
+    assert fake.calls[0]["url"].rstrip("/").endswith("/api/search/discipline/week")
+    assert fake.calls[0]["params"] == {"discipline_id": 7, "date": "2026-03-24"}
 
 
 @pytest.mark.asyncio
-async def test_get_user_week_non_list_response_raises() -> None:
+async def test_lecturer_day_non_list_raises() -> None:
     fake = FakeTransport(
         [
             TransportResponse(
                 status_code=200,
                 headers={"Content-Type": "application/json"},
-                url=f"{BASE}/api/schedule/user/1/week",
-                body_text="null",
+                url=f"{BASE}/api/search/lecturer/day",
+                body_text="{}",
             )
         ]
     )
     async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
         with pytest.raises(TypeError, match="expected list"):
-            await client.schedule.get_user_week(1, "2026-03-26")
+            await client.search.lecturer_day(1, "2026-03-26")

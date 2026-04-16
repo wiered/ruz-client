@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Protocol, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 __all__ = ["TransportResponse", "AsyncHttpTransport"]
 
@@ -30,13 +31,11 @@ class AsyncHttpTransport(Protocol):
         method: str,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: Mapping[str, str] | None = None,
         timeout_s: float = 30.0,
-    ) -> TransportResponse:
-        ...
+    ) -> TransportResponse: ...
 
-    async def aclose(self) -> None:
-        ...
+    async def aclose(self) -> None: ...

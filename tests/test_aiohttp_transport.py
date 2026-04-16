@@ -31,6 +31,57 @@ async def test_aiohttp_transport_maps_response_to_transport_response() -> None:
 
 
 @pytest.mark.asyncio
+async def test_aiohttp_transport_sequential_sends_reuse_session() -> None:
+    """Несколько запросов подряд через один `AiohttpTransport` с общей сессией."""
+    with aioresponses() as m:
+        m.get(
+            "http://127.0.0.1:2201/a",
+            body=json.dumps({"n": 1}),
+            status=200,
+            headers={"Content-Type": "application/json"},
+        )
+        m.get(
+            "http://127.0.0.1:2201/b",
+            body=json.dumps({"n": 2}),
+            status=200,
+            headers={"Content-Type": "application/json"},
+        )
+        t = AiohttpTransport(timeout_s=5.0)
+        try:
+            r1 = await t.send("GET", "http://127.0.0.1:2201/a", timeout_s=5.0)
+            r2 = await t.send("GET", "http://127.0.0.1:2201/b", timeout_s=5.0)
+        finally:
+            await t.aclose()
+
+    assert json.loads(r1.body_text) == {"n": 1}
+    assert json.loads(r2.body_text) == {"n": 2}
+
+
+@pytest.mark.asyncio
+async def test_aiohttp_transport_aclose_twice_does_not_raise() -> None:
+    """Повторный `aclose()` для владельца сессии — без исключения."""
+    t = AiohttpTransport(timeout_s=1.0)
+    await t.aclose()
+    await t.aclose()
+
+
+@pytest.mark.asyncio
+async def test_aiohttp_transport_send_after_close_raises() -> None:
+    """Запрос после `aclose()` даёт типичную для aiohttp ошибку закрытой сессии."""
+    with aioresponses() as m:
+        m.get(
+            "http://127.0.0.1:2201/x",
+            body="{}",
+            status=200,
+            headers={"Content-Type": "application/json"},
+        )
+        t = AiohttpTransport(timeout_s=5.0)
+        await t.aclose()
+        with pytest.raises(RuntimeError, match="Session is closed"):
+            await t.send("GET", "http://127.0.0.1:2201/x", timeout_s=5.0)
+
+
+@pytest.mark.asyncio
 async def test_aiohttp_transport_client_error_wraps() -> None:
     """Ошибки aiohttp при запросе переводятся в `RuzClientError`."""
     from contextlib import asynccontextmanager

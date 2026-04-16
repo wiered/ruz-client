@@ -29,7 +29,7 @@ def search_group_filters(
     group_id: int | None = None,
     sub_group: int | None = None,
 ) -> dict[str, int]:
-    """Дополнительные query-параметры ``group_id`` / ``sub_group`` для ``GET .../api/search/...``."""
+    """Дополнительные query-параметры group_id / sub_group для GET .../api/search/..."""
     return _optional_filters(group_id=group_id, sub_group=sub_group)
 
 
@@ -38,7 +38,7 @@ class SearchEndpoints:
 
     __slots__ = ("_client",)
 
-    def __init__(self, client: "RuzClient") -> None:
+    def __init__(self, client: RuzClient) -> None:
         self._client = client
 
     async def lecturer_day(
@@ -68,7 +68,9 @@ class SearchEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from lecturer day search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from lecturer day search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
 
     async def lecturer_week(
@@ -98,7 +100,9 @@ class SearchEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from lecturer week search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from lecturer week search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
 
     async def discipline_day(
@@ -128,7 +132,9 @@ class SearchEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from discipline day search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from discipline day search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]
 
     async def discipline_week(
@@ -158,5 +164,7 @@ class SearchEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from discipline week search, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from discipline week search, got {type(raw).__name__}"
+            )
         return raw  # type: ignore[return-value]

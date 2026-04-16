@@ -19,3 +19,17 @@ Recent commits use short, imperative prefixes such as `fix(client): ...` and `fe
 
 ## Security & Configuration Tips
 Do not commit secrets. Local settings belong in `.env`, and the repo has a history of token leakage, so double-check environment files before pushing. When changing auth or transport code, verify both `X-API-Key` and fallback behaviors in tests.
+
+## Ruff
+Use Ruff make code look good, find bug.
+
+- See if code messy or wrong:
+  ```
+  ruff check .
+  ```
+- Make code pretty:
+  ```
+  ruff format .
+  ```
+
+Change code? Run Ruff. Code look good before push.

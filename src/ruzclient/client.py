@@ -1,22 +1,25 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional
+from typing import Any
 
 from .auth import API_KEY_HEADER_NAME, get_api_key
 from .errors import RuzAuthError, RuzHttpError
 from .http import AiohttpTransport
+from .http.endpoints.disciplines import DisciplinesEndpoints
 from .http.endpoints.groups import GroupsEndpoints
+from .http.endpoints.lecturers import LecturersEndpoints
 from .http.endpoints.schedule import ScheduleEndpoints
 from .http.endpoints.search import SearchEndpoints
 from .http.endpoints.users import UsersEndpoints
-from .http.endpoints.lecturers import LecturersEndpoints
-from .http.endpoints.disciplines import DisciplinesEndpoints
 from .http.transport import AsyncHttpTransport, TransportResponse
 
 
-def _normalize_base_url(base_url: str, *, default_scheme: str = "http", default_port: int = 2201) -> str:
+def _normalize_base_url(
+    base_url: str, *, default_scheme: str = "http", default_port: int = 2201
+) -> str:
     """
     Приводит `base_url` к виду `http[s]://host[:port][/path]`.
 
@@ -58,11 +61,11 @@ class ClientConfig:
     base_url: str
     timeout_s: float = 30.0
     # API Key для `X-API-Key` (требуется ruz-server по документации).
-    api_key: Optional[str] = None
+    api_key: str | None = None
     # Оставлено для обратной совместимости: если `api_key` не задан,
     # используем `bearer_token` как источник для `X-API-Key`.
-    bearer_token: Optional[str] = None
-    default_headers: Optional[Mapping[str, str]] = None
+    bearer_token: str | None = None
+    default_headers: Mapping[str, str] | None = None
 
 
 class RuzClient:
@@ -79,8 +82,8 @@ class RuzClient:
         self,
         config: ClientConfig,
         *,
-        transport: Optional[AsyncHttpTransport] = None,
-        client: Optional[Any] = None,
+        transport: AsyncHttpTransport | None = None,
+        client: Any | None = None,
     ) -> None:
         self._config = ClientConfig(
             base_url=_normalize_base_url(config.base_url),
@@ -117,7 +120,7 @@ class RuzClient:
 
     @property
     def groups(self) -> GroupsEndpoints:
-        """Эндпоинты групп, например ``await client.groups.search_groups_by_name("ИС22")``."""
+        """Эндпоинты групп: поиск, create_group, list_groups, get_group, …"""
         return self._groups
 
     @property
@@ -144,7 +147,7 @@ class RuzClient:
         if self._own_transport:
             await self._transport.aclose()
 
-    async def __aenter__(self) -> "RuzClient":
+    async def __aenter__(self) -> RuzClient:
         return self
 
     async def __aexit__(self, exc_type, exc, tb) -> None:
@@ -161,9 +164,9 @@ class RuzClient:
 
     def _build_headers(
         self,
-        headers: Optional[Mapping[str, str]],
+        headers: Mapping[str, str] | None,
         *,
-        api_key: Optional[str] = None,
+        api_key: str | None = None,
     ) -> dict[str, str]:
         merged: dict[str, str] = {}
         if self._config.default_headers:
@@ -177,7 +180,11 @@ class RuzClient:
             effective_api_key = (
                 self._config.api_key
                 if self._config.api_key is not None
-                else (self._config.bearer_token if self._config.bearer_token is not None else None)
+                else (
+                    self._config.bearer_token
+                    if self._config.bearer_token is not None
+                    else None
+                )
             )
         if effective_api_key is None:
             effective_api_key = get_api_key()
@@ -226,12 +233,12 @@ class RuzClient:
         method: str,
         path: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[Mapping[str, str]] = None,
-        api_key: Optional[str] = None,
-        timeout_s: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: Mapping[str, str] | None = None,
+        api_key: str | None = None,
+        timeout_s: float | None = None,
     ) -> Any:
         """
         Унифицированный запрос.
@@ -261,10 +268,10 @@ class RuzClient:
         self,
         path: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        headers: Optional[Mapping[str, str]] = None,
-        api_key: Optional[str] = None,
-        timeout_s: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        api_key: str | None = None,
+        timeout_s: float | None = None,
     ) -> Any:
         return await self.request(
             "GET",
@@ -279,12 +286,12 @@ class RuzClient:
         self,
         path: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[Mapping[str, str]] = None,
-        api_key: Optional[str] = None,
-        timeout_s: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: Mapping[str, str] | None = None,
+        api_key: str | None = None,
+        timeout_s: float | None = None,
     ) -> Any:
         return await self.request(
             "POST",
@@ -301,12 +308,12 @@ class RuzClient:
         self,
         path: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[Mapping[str, str]] = None,
-        api_key: Optional[str] = None,
-        timeout_s: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: Mapping[str, str] | None = None,
+        api_key: str | None = None,
+        timeout_s: float | None = None,
     ) -> Any:
         return await self.request(
             "PUT",
@@ -323,10 +330,10 @@ class RuzClient:
         self,
         path: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        headers: Optional[Mapping[str, str]] = None,
-        api_key: Optional[str] = None,
-        timeout_s: Optional[float] = None,
+        params: Mapping[str, Any] | None = None,
+        headers: Mapping[str, str] | None = None,
+        api_key: str | None = None,
+        timeout_s: float | None = None,
     ) -> Any:
         return await self.request(
             "DELETE",
@@ -337,7 +344,9 @@ class RuzClient:
             timeout_s=timeout_s,
         )
 
-    async def public(self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None) -> Any:
+    async def public(
+        self, *, api_key: str | None = None, timeout_s: float | None = None
+    ) -> Any:
         """
         GET `/public`.
 
@@ -352,7 +361,7 @@ class RuzClient:
         )
 
     async def protected(
-        self, *, api_key: Optional[str] = None, timeout_s: Optional[float] = None
+        self, *, api_key: str | None = None, timeout_s: float | None = None
     ) -> Any:
         """
         GET `/protected`.
@@ -367,7 +376,7 @@ class RuzClient:
             timeout_s=timeout_s,
         )
 
-    async def healthz(self, *, timeout_s: Optional[float] = None) -> Any:
+    async def healthz(self, *, timeout_s: float | None = None) -> Any:
         """
         GET `/healthz`.
 

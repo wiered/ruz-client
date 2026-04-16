@@ -17,11 +17,11 @@ class _UnsetType:
 
 
 UNSET = _UnsetType()
-"""Поле ``UserUpdate`` не передано в JSON (частичное обновление). ``None`` — явный JSON ``null``."""
+"""Поле UserUpdate не передано в JSON (частичное обновление). None — явный JSON null."""
 
 
 class UserRead(TypedDict):
-    """Ответ ``GET /api/user/{user_id}`` / создания пользователя (как на сервере)."""
+    """Ответ GET /api/user/{user_id} / создания пользователя (как на сервере)."""
 
     id: int
     group_oid: int | None
@@ -32,7 +32,10 @@ class UserRead(TypedDict):
 
 
 def _user_create_to_dict(c: UserCreate) -> dict[str, Any]:
-    """POST: ``subgroup`` передаётся всегда; ``null`` — пользователь без назначенной подгруппы."""
+    """
+    POST: subgroup передаётся всегда;
+    null — пользователь без назначенной подгруппы.
+    """
     d = asdict(c)
     out: dict[str, Any] = {}
     for k, v in d.items():
@@ -45,7 +48,10 @@ def _user_create_to_dict(c: UserCreate) -> dict[str, Any]:
 
 
 def _user_update_to_dict(u: UserUpdate) -> dict[str, Any]:
-    """PUT: только заданные поля; ``None`` сериализуется в явный ``null`` (не путать с отсутствием ключа)."""
+    """
+    PUT: только заданные поля;
+    None сериализуется в явный null (не путать с отсутствием ключа).
+    """
     out: dict[str, Any] = {}
     for f in fields(u):
         v = getattr(u, f.name)
@@ -57,11 +63,10 @@ def _user_update_to_dict(u: UserUpdate) -> dict[str, Any]:
 
 @dataclass
 class UserUpdate:
-    """
-    Тело ``PUT /api/user/{user_id}`` — частичное обновление.
+    """Тело PUT /api/user/{user_id} — частичное обновление.
 
-    Поля по умолчанию ``UNSET``: не попадают в JSON. Значение ``None`` отправляется как ``null``
-    (например сброс ``subgroup``).
+    Поля по умолчанию UNSET: не попадают в JSON. Значение None отправляется как null
+    (например сброс subgroup).
     """
 
     username: Any = UNSET
@@ -75,12 +80,14 @@ class UserUpdate:
 @dataclass
 class UserCreate:
     """
-    Тело ``POST /api/user/`` (совместимо с ``UserCreate`` на сервере).
+    Тело POST /api/user/ (совместимо с UserCreate на сервере).
 
-    При создании группы в БД сервер требует ``group_guid``, ``group_name``,
-    ``faculty_name`` — передайте их, если группы с таким ``group_oid`` ещё нет.
+    Если группы с таким ``group_oid`` ещё нет в БД, сервер создаёт запись группы
+    при непустых ``group_guid`` и ``group_name``. Поле ``faculty_name`` необязательно
+    (можно не передавать — на сервере будет ``no_faculty``).
 
-    ``subgroup=None`` сериализуется в JSON ``null`` — пользователь без подгруппы, пока не задана явно (0/1/2).
+    subgroup=None сериализуется в JSON null — пользователь без подгруппы,
+    пока не задана явно (0/1/2).
     """
 
     id: int
@@ -97,7 +104,7 @@ class UsersEndpoints:
 
     __slots__ = ("_client",)
 
-    def __init__(self, client: "RuzClient") -> None:
+    def __init__(self, client: RuzClient) -> None:
         self._client = client
 
     async def create_user(

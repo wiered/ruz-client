@@ -49,7 +49,9 @@ class LecturersEndpoints:
             api_key=api_key,
         )
         if not isinstance(raw, list):
-            raise TypeError(f"expected list from lecturer list, got {type(raw).__name__}")
+            raise TypeError(
+                f"expected list from lecturer list, got {type(raw).__name__}"
+            )
         out: list[Lecturer] = []
         for i, item in enumerate(raw):
             try:
@@ -63,7 +65,6 @@ class LecturersEndpoints:
             response = await self._client.get(f"api/lecturer/{lecturer_id}")
         except RuzHttpError as e:
             if e.status_code == 404:
-                raise ValueError(f"Lecturer with id {lecturer_id} not found")
+                raise ValueError(f"Lecturer with id {lecturer_id} not found") from e
             raise
-
         return _parse_lecturer(response)

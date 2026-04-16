@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import asyncio
-from typing import Any, Mapping, Optional
+from collections.abc import Mapping
+from typing import Any
 
 from ..errors import RuzClientError
 from .transport import TransportResponse
@@ -14,13 +14,14 @@ class AiohttpTransport:
         self,
         *,
         timeout_s: float = 30.0,
-        session: Optional[Any] = None,
+        session: Any | None = None,
     ) -> None:
         try:
             import aiohttp  # type: ignore
         except ImportError as e:  # pragma: no cover
             raise ImportError(
-                "aiohttp is required for AiohttpTransport. Install with `pip install aiohttp`."
+                "aiohttp is required for AiohttpTransport. "
+                "Install with `pip install aiohttp`."
             ) from e
 
         self._aiohttp = aiohttp
@@ -37,10 +38,10 @@ class AiohttpTransport:
         method: str,
         url: str,
         *,
-        params: Optional[Mapping[str, Any]] = None,
-        json: Optional[Any] = None,
-        data: Optional[Any] = None,
-        headers: Optional[Mapping[str, str]] = None,
+        params: Mapping[str, Any] | None = None,
+        json: Any | None = None,
+        data: Any | None = None,
+        headers: Mapping[str, str] | None = None,
         timeout_s: float = 30.0,
     ) -> TransportResponse:
         timeout = self._aiohttp.ClientTimeout(total=timeout_s)
@@ -64,7 +65,7 @@ class AiohttpTransport:
                 )
         except self._aiohttp.ClientError as e:
             raise RuzClientError(f"Network error: {e}") from e
-        except asyncio.TimeoutError as e:
+        except TimeoutError as e:
             raise RuzClientError(f"Network error: {e}") from e
 
     async def aclose(self) -> None:

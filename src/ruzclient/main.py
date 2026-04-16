@@ -5,7 +5,7 @@ import asyncio
 import json
 import os
 import sys
-from typing import Any, Optional
+from typing import Any
 
 from ruzclient.http import HttpxTransport
 
@@ -42,7 +42,10 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--api-key",
         default=None,
-        help="X-API-Key для эндпоинта /protected (если не передан — используется TOKEN из env).",
+        help=(
+            "X-API-Key для эндпоинта /protected "
+            "(если не передан — используется TOKEN из env)."
+        ),
     )
 
     sub = parser.add_subparsers(dest="command", required=True)
@@ -50,14 +53,30 @@ def build_parser() -> argparse.ArgumentParser:
     sub.add_parser("public", help="GET /public")
     sub.add_parser("protected", help="GET /protected (требует X-API-Key)")
     sub.add_parser("group", help="GET /api/group/search?q=... (поиск групп по имени)")
-    sub.add_parser("user", help="GET /api/user/{user_id} (получение пользователя по id)")
-    sub.add_parser("lecturer_week", help="GET /api/search/lecturer/week?lecturer_id=...&date=... (поиск занятий преподавателя за неделю)")
-    sub.add_parser("discipline_week", help="GET /api/search/discipline/week?discipline_id=...&date=... (поиск занятий дисциплины за неделю)")
+    sub.add_parser(
+        "user", help="GET /api/user/{user_id} (получение пользователя по id)"
+    )
+    sub.add_parser(
+        "lecturer_week",
+        help=(
+            "GET /api/search/lecturer/week?lecturer_id=...&date=... "
+            "(поиск занятий преподавателя за неделю)"
+        ),
+    )
+    sub.add_parser(
+        "discipline_week",
+        help=(
+            "GET /api/search/discipline/week?discipline_id=...&date=... "
+            "(поиск занятий дисциплины за неделю)"
+        ),
+    )
 
     return parser
 
 
-async def run_command(*, base_url: str, timeout_s: float, api_key: Optional[str], command: str) -> None:
+async def run_command(
+    *, base_url: str, timeout_s: float, api_key: str | None, command: str
+) -> None:
     transport = HttpxTransport(timeout_s=timeout_s)
     client = RuzClient(
         ClientConfig(
@@ -97,7 +116,7 @@ async def run_command(*, base_url: str, timeout_s: float, api_key: Optional[str]
     await transport.aclose()
 
 
-def main(argv: Optional[list[str]] = None) -> int:
+def main(argv: list[str] | None = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
 
@@ -126,6 +145,7 @@ if __name__ == "__main__":
         raise SystemExit(1)
 
     from dotenv import load_dotenv
+
     load_dotenv()
 
     raise SystemExit(main())
