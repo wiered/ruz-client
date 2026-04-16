@@ -10,7 +10,7 @@ __all__ = ["ScheduleEndpoints", "UserScheduleLesson"]
 
 
 class UserScheduleLesson(TypedDict):
-    """Элемент ответа ``GET /api/schedule/user/{user_id}/day|week``."""
+    """Элемент массива расписания (user day/week, ``GET .../group/{id}/week``)."""
 
     lesson_id: int
     date: str
@@ -37,7 +37,7 @@ def _format_schedule_date(d: date | str) -> str:
 
 
 class ScheduleEndpoints:
-    """``client.schedule.get_user_day(...)``, ``client.schedule.get_user_week(...)``."""
+    """``get_user_day``, ``get_user_week``, ``get_group_week``."""
 
     __slots__ = ("_client",)
 
@@ -91,5 +91,32 @@ class ScheduleEndpoints:
         if not isinstance(raw, list):
             raise TypeError(
                 f"expected list from user schedule week, got {type(raw).__name__}"
+            )
+        return raw  # type: ignore[return-value]
+
+    async def get_group_week(
+        self,
+        group_id: int,
+        schedule_date: date | str,
+        *,
+        timeout_s: float | None = None,
+        api_key: str | None = None,
+    ) -> list[UserScheduleLesson]:
+        """
+        Расписание группы за неделю (пн–вс), все подгруппы.
+
+        Якорная дата ``schedule_date``. Запрос:
+        ``GET .../api/schedule/group/{group_id}/week?date=YYYY-MM-DD``.
+        Если группы нет — ``404`` (см. ``RuzHttpError``).
+        """
+        raw = await self._client.get(
+            f"api/schedule/group/{group_id}/week",
+            params={"date": _format_schedule_date(schedule_date)},
+            timeout_s=timeout_s,
+            api_key=api_key,
+        )
+        if not isinstance(raw, list):
+            raise TypeError(
+                f"expected list from group schedule week, got {type(raw).__name__}"
             )
         return raw  # type: ignore[return-value]

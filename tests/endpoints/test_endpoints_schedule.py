@@ -86,6 +86,43 @@ async def test_get_user_week_builds_path_and_params() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_group_week_builds_path_and_params() -> None:
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/schedule/group/55/week",
+                body_text=json.dumps([_LESSON]),
+            )
+        ]
+    )
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        out = await client.schedule.get_group_week(55, date(2026, 3, 24))
+    assert fake.calls[0]["method"] == "GET"
+    assert fake.calls[0]["url"].rstrip("/").endswith("/api/schedule/group/55/week")
+    assert fake.calls[0]["params"] == {"date": "2026-03-24"}
+    assert out == [_LESSON]
+
+
+@pytest.mark.asyncio
+async def test_get_group_week_non_list_response_raises() -> None:
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/schedule/group/1/week",
+                body_text="null",
+            )
+        ]
+    )
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        with pytest.raises(TypeError, match="expected list"):
+            await client.schedule.get_group_week(1, "2026-03-26")
+
+
+@pytest.mark.asyncio
 async def test_get_user_day_empty_schedule_date_raises() -> None:
     fake = FakeTransport([])
     async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
