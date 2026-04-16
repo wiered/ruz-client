@@ -60,13 +60,13 @@ def build_parser() -> argparse.ArgumentParser:
         "lecturer_week",
         help=(
             "GET /api/search/lecturer/week?lecturer_id=...&date=... "
-            "(поиск занятий преподавателя за неделю)",
+            "(поиск занятий преподавателя за неделю)"
         ),
     )
     sub.add_parser(
         "discipline_week",
         help=(
-            "GET /api/search/discipline/week?discipline_id=...&date=..."
+            "GET /api/search/discipline/week?discipline_id=...&date=... "
             "(поиск занятий дисциплины за неделю)"
         ),
     )
