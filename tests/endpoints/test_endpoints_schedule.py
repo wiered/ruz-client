@@ -86,6 +86,26 @@ async def test_get_user_week_builds_path_and_params() -> None:
 
 
 @pytest.mark.asyncio
+async def test_get_user_schedule_builds_path_without_params() -> None:
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/schedule/user/99",
+                body_text=json.dumps([_LESSON]),
+            )
+        ]
+    )
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        out = await client.schedule.get_user_schedule(99)
+    assert fake.calls[0]["method"] == "GET"
+    assert fake.calls[0]["url"].rstrip("/").endswith("/api/schedule/user/99")
+    assert fake.calls[0]["params"] is None
+    assert out == [_LESSON]
+
+
+@pytest.mark.asyncio
 async def test_get_group_week_builds_path_and_params() -> None:
     fake = FakeTransport(
         [
@@ -162,3 +182,20 @@ async def test_get_user_week_non_list_response_raises() -> None:
     async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
         with pytest.raises(TypeError, match="expected list"):
             await client.schedule.get_user_week(1, "2026-03-26")
+
+
+@pytest.mark.asyncio
+async def test_get_user_schedule_non_list_response_raises() -> None:
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/schedule/user/1",
+                body_text="null",
+            )
+        ]
+    )
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        with pytest.raises(TypeError, match="expected list"):
+            await client.schedule.get_user_schedule(1)

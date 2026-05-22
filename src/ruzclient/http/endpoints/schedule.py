@@ -37,7 +37,9 @@ def _format_schedule_date(d: date | str) -> str:
 
 
 class ScheduleEndpoints:
-    """``get_user_day``, ``get_user_week``, ``get_group_week``."""
+    """
+    ``get_user_day``, ``get_user_week``, ``get_user_schedule``, ``get_group_week``.
+    """
 
     __slots__ = ("_client",)
 
@@ -91,6 +93,29 @@ class ScheduleEndpoints:
         if not isinstance(raw, list):
             raise TypeError(
                 f"expected list from user schedule week, got {type(raw).__name__}"
+            )
+        return raw  # type: ignore[return-value]
+
+    async def get_user_schedule(
+        self,
+        user_id: int,
+        *,
+        timeout_s: float | None = None,
+        api_key: str | None = None,
+    ) -> list[UserScheduleLesson]:
+        """
+        Расписание пользователя с текущего дня до конца следующего месяца.
+
+        Запрос: ``GET .../api/schedule/user/{user_id}``.
+        """
+        raw = await self._client.get(
+            f"api/schedule/user/{user_id}",
+            timeout_s=timeout_s,
+            api_key=api_key,
+        )
+        if not isinstance(raw, list):
+            raise TypeError(
+                f"expected list from user schedule, got {type(raw).__name__}"
             )
         return raw  # type: ignore[return-value]
 
