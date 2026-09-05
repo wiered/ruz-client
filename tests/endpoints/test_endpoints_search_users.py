@@ -190,6 +190,45 @@ async def test_update_user_omits_unset_fields() -> None:
 
 
 @pytest.mark.asyncio
+async def test_touch_user_puts_without_body() -> None:
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/user/5/touch",
+                body_text="true",
+            )
+        ]
+    )
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        out = await client.users.touch(5, timeout_s=8.0, api_key="key")
+    assert fake.calls[0]["method"] == "PUT"
+    assert fake.calls[0]["url"].endswith("/api/user/5/touch")
+    assert fake.calls[0]["json"] is None
+    assert fake.calls[0]["timeout_s"] == 8.0
+    assert fake.calls[0]["headers"]["X-API-Key"] == "key"
+    assert out is True
+
+
+@pytest.mark.asyncio
+async def test_touch_user_raises_if_response_not_bool() -> None:
+    fake = FakeTransport(
+        [
+            TransportResponse(
+                status_code=200,
+                headers={"Content-Type": "application/json"},
+                url=f"{BASE}/api/user/5/touch",
+                body_text='"true"',
+            )
+        ]
+    )
+    async with RuzClient(ClientConfig(base_url=BASE), transport=fake) as client:
+        with pytest.raises(TypeError, match="expected bool from user touch"):
+            await client.users.touch(5)
+
+
+@pytest.mark.asyncio
 async def test_create_user_omits_none_optional_fields() -> None:
     fake = FakeTransport(
         [
