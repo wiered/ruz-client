@@ -135,7 +135,7 @@ class RuzClient:
 
     @property
     def users(self) -> UsersEndpoints:
-        """Эндпоинты пользователей: ``create_user``, ``get_by_id``, …"""
+        """Эндпоинты пользователей: ``create_user``, ``touch``, ``get_by_id``, …"""
         return self._users
 
     @property

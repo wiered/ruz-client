@@ -100,7 +100,7 @@ class UserCreate:
 
 
 class UsersEndpoints:
-    """``client.users.create_user(...)``, ``client.users.get_by_id(...)`` и т.д."""
+    """Операции создания, обновления, отметки активности и чтения пользователей."""
 
     __slots__ = ("_client",)
 
@@ -141,6 +141,23 @@ class UsersEndpoints:
             api_key=api_key,
         )
         return raw  # type: ignore[return-value]
+
+    async def touch(
+        self,
+        user_id: int,
+        *,
+        timeout_s: float | None = None,
+        api_key: str | None = None,
+    ) -> bool:
+        """``PUT /api/user/{user_id}/touch`` — обновить время активности."""
+        raw = await self._client.put(
+            f"api/user/{user_id}/touch",
+            timeout_s=timeout_s,
+            api_key=api_key,
+        )
+        if not isinstance(raw, bool):
+            raise TypeError(f"expected bool from user touch, got {type(raw).__name__}")
+        return raw
 
     async def get_by_id(
         self,

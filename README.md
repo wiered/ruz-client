@@ -110,6 +110,7 @@ asyncio.run(main())
 - `client.search.discipline_week(...)`
 - `client.users.create_user(...)`
 - `client.users.update_user(...)`
+- `client.users.touch(...)`
 - `client.users.get_by_id(...)`
 
 ## Тесты
